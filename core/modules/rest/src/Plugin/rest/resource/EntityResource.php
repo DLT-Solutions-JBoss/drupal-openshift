@@ -1,22 +1,34 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\rest\Plugin\rest\resource\EntityResource.
- */
-
 namespace Drupal\rest\Plugin\rest\resource;
 
+use Drupal\Component\Plugin\DependentPluginInterface;
+use Drupal\Component\Plugin\PluginManagerInterface;
+use Drupal\Core\Access\AccessResultReasonInterface;
+use Drupal\Core\Cache\CacheableResponseInterface;
+use Drupal\Core\Config\Entity\ConfigEntityType;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Routing\AccessAwareRouterInterface;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ResourceResponse;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\rest\ModifiedResourceResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Represents entities as resources.
+ *
+ * @see \Drupal\rest\Plugin\Deriver\EntityDeriver
  *
  * @RestResource(
  *   id = "entity",
@@ -25,13 +37,78 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *   deriver = "Drupal\rest\Plugin\Deriver\EntityDeriver",
  *   uri_paths = {
  *     "canonical" = "/entity/{entity_type}/{entity}",
- *     "https://www.drupal.org/link-relations/create" = "/entity/{entity_type}"
+ *     "create" = "/entity/{entity_type}"
  *   }
  * )
- *
- * @see \Drupal\rest\Plugin\Derivative\EntityDerivative
  */
-class EntityResource extends ResourceBase {
+class EntityResource extends ResourceBase implements DependentPluginInterface {
+
+  use EntityResourceValidationTrait;
+  use EntityResourceAccessTrait;
+
+  /**
+   * The entity type targeted by this resource.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeInterface
+   */
+  protected $entityType;
+
+  /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * The link relation type manager used to create HTTP header links.
+   *
+   * @var \Drupal\Component\Plugin\PluginManagerInterface
+   */
+  protected $linkRelationTypeManager;
+
+  /**
+   * Constructs a Drupal\rest\Plugin\rest\resource\EntityResource object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager
+   * @param array $serializer_formats
+   *   The available serialization formats.
+   * @param \Psr\Log\LoggerInterface $logger
+   *   A logger instance.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
+   * @param \Drupal\Component\Plugin\PluginManagerInterface $link_relation_type_manager
+   *   The link relation type manager.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, $serializer_formats, LoggerInterface $logger, ConfigFactoryInterface $config_factory, PluginManagerInterface $link_relation_type_manager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $serializer_formats, $logger);
+    $this->entityType = $entity_type_manager->getDefinition($plugin_definition['entity_type']);
+    $this->configFactory = $config_factory;
+    $this->linkRelationTypeManager = $link_relation_type_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity_type.manager'),
+      $container->getParameter('serializer.formats'),
+      $container->get('logger.factory')->get('rest'),
+      $container->get('config.factory'),
+      $container->get('plugin.manager.link_relation_type')
+    );
+  }
 
   /**
    * Responds to entity GET requests.
@@ -45,19 +122,26 @@ class EntityResource extends ResourceBase {
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */
   public function get(EntityInterface $entity) {
-    if (!$entity->access('view')) {
-      throw new AccessDeniedHttpException();
-    }
-    foreach ($entity as $field_name => $field) {
-      if (!$field->access('view')) {
-        unset($entity->{$field_name});
+    $request = \Drupal::request();
+    $response = new ResourceResponse($entity, 200);
+    // @todo Either remove the line below or remove this todo in https://www.drupal.org/project/drupal/issues/2973356
+    $response->addCacheableDependency($request->attributes->get(AccessAwareRouterInterface::ACCESS_RESULT));
+    $response->addCacheableDependency($entity);
+
+    if ($entity instanceof FieldableEntityInterface) {
+      foreach ($entity as $field_name => $field) {
+        /** @var \Drupal\Core\Field\FieldItemListInterface $field */
+        $field_access = $field->access('view', NULL, TRUE);
+        $response->addCacheableDependency($field_access);
+
+        if (!$field_access->isAllowed()) {
+          $entity->set($field_name, NULL);
+        }
       }
     }
 
-    $response = new ResourceResponse($entity, 200);
-    // Make the response use the entity's cacheability metadata.
-    // @todo include access cacheability metadata, for the access checks above.
-    $response->addCacheableDependency($entity);
+    $this->addLinkHeaders($entity, $response);
+
     return $response;
   }
 
@@ -67,7 +151,7 @@ class EntityResource extends ResourceBase {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return \Drupal\rest\ModifiedResourceResponse
    *   The HTTP response object.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
@@ -77,8 +161,9 @@ class EntityResource extends ResourceBase {
       throw new BadRequestHttpException('No entity content received.');
     }
 
-    if (!$entity->access('create')) {
-      throw new AccessDeniedHttpException();
+    $entity_access = $entity->access('create', NULL, TRUE);
+    if (!$entity_access->isAllowed()) {
+      throw new AccessDeniedHttpException($entity_access->getReason() ?: $this->generateFallbackAccessDeniedMessage($entity, 'create'));
     }
     $definition = $this->getPluginDefinition();
     // Verify that the deserialized entity is of the type that we expect to
@@ -92,26 +177,23 @@ class EntityResource extends ResourceBase {
       throw new BadRequestHttpException('Only new entities can be created');
     }
 
-    // Only check 'edit' permissions for fields that were actually
-    // submitted by the user. Field access makes no difference between 'create'
-    // and 'update', so the 'edit' operation is used here.
-    foreach ($entity->_restSubmittedFields as $key => $field_name) {
-      if (!$entity->get($field_name)->access('edit')) {
-        throw new AccessDeniedHttpException("Access denied on creating field '$field_name'");
-      }
-    }
+    $this->checkEditFieldAccess($entity);
 
     // Validate the received data before saving.
     $this->validate($entity);
     try {
       $entity->save();
-      $this->logger->notice('Created entity %type with ID %id.', array('%type' => $entity->getEntityTypeId(), '%id' => $entity->id()));
+      $this->logger->notice('Created entity %type with ID %id.', ['%type' => $entity->getEntityTypeId(), '%id' => $entity->id()]);
 
-      // 201 Created responses have an empty body.
-      $url = $entity->urlInfo('canonical', ['absolute' => TRUE])->toString(TRUE);
-      $response = new ResourceResponse(NULL, 201, ['Location' => $url->getGeneratedUrl()]);
-      $response->addCacheableDependency($url);
-      return $response;
+      // 201 Created responses return the newly created entity in the response
+      // body. These responses are not cacheable, so we add no cacheability
+      // metadata here.
+      $headers = [];
+      if (in_array('canonical', $entity->uriRelationships(), TRUE)) {
+        $url = $entity->urlInfo('canonical', ['absolute' => TRUE])->toString(TRUE);
+        $headers['Location'] = $url->getGeneratedUrl();
+      }
+      return new ModifiedResourceResponse($entity, 201, $headers);
     }
     catch (EntityStorageException $e) {
       throw new HttpException(500, 'Internal Server Error', $e);
@@ -126,7 +208,7 @@ class EntityResource extends ResourceBase {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return \Drupal\rest\ModifiedResourceResponse
    *   The HTTP response object.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
@@ -139,38 +221,92 @@ class EntityResource extends ResourceBase {
     if ($entity->getEntityTypeId() != $definition['entity_type']) {
       throw new BadRequestHttpException('Invalid entity type');
     }
-    if (!$original_entity->access('update')) {
-      throw new AccessDeniedHttpException();
-    }
 
-    // Overwrite the received properties.
-    $langcode_key = $entity->getEntityType()->getKey('langcode');
+    // Overwrite the received fields.
+    // @todo Remove $changed_fields in https://www.drupal.org/project/drupal/issues/2862574.
+    $changed_fields = [];
     foreach ($entity->_restSubmittedFields as $field_name) {
       $field = $entity->get($field_name);
       // It is not possible to set the language to NULL as it is automatically
       // re-initialized. As it must not be empty, skip it if it is.
-      if ($field_name == $langcode_key && $field->isEmpty()) {
+      // @todo Remove in https://www.drupal.org/project/drupal/issues/2933408.
+      if ($entity->getEntityType()->hasKey('langcode') && $field_name === $entity->getEntityType()->getKey('langcode') && $field->isEmpty()) {
         continue;
       }
-
-      if (!$original_entity->get($field_name)->access('edit')) {
-        throw new AccessDeniedHttpException("Access denied on updating field '$field_name'.");
+      if ($this->checkPatchFieldAccess($original_entity->get($field_name), $field)) {
+        $changed_fields[] = $field_name;
+        $original_entity->set($field_name, $field->getValue());
       }
-      $original_entity->set($field_name, $field->getValue());
+    }
+
+    // If no fields are changed, we can send a response immediately!
+    if (empty($changed_fields)) {
+      return new ModifiedResourceResponse($original_entity, 200);
     }
 
     // Validate the received data before saving.
-    $this->validate($original_entity);
+    $this->validate($original_entity, $changed_fields);
     try {
       $original_entity->save();
-      $this->logger->notice('Updated entity %type with ID %id.', array('%type' => $original_entity->getEntityTypeId(), '%id' => $original_entity->id()));
+      $this->logger->notice('Updated entity %type with ID %id.', ['%type' => $original_entity->getEntityTypeId(), '%id' => $original_entity->id()]);
 
-      // Update responses have an empty body.
-      return new ResourceResponse(NULL, 204);
+      // Return the updated entity in the response body.
+      return new ModifiedResourceResponse($original_entity, 200);
     }
     catch (EntityStorageException $e) {
       throw new HttpException(500, 'Internal Server Error', $e);
     }
+  }
+
+  /**
+   * Checks whether the given field should be PATCHed.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $original_field
+   *   The original (stored) value for the field.
+   * @param \Drupal\Core\Field\FieldItemListInterface $received_field
+   *   The received value for the field.
+   *
+   * @return bool
+   *   Whether the field should be PATCHed or not.
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
+   *   Thrown when the user sending the request is not allowed to update the
+   *   field. Only thrown when the user could not abuse this information to
+   *   determine the stored value.
+   *
+   * @internal
+   */
+  protected function checkPatchFieldAccess(FieldItemListInterface $original_field, FieldItemListInterface $received_field) {
+    // The user might not have access to edit the field, but still needs to
+    // submit the current field value as part of the PATCH request. For
+    // example, the entity keys required by denormalizers. Therefore, if the
+    // received value equals the stored value, return FALSE without throwing an
+    // exception. But only for fields that the user has access to view, because
+    // the user has no legitimate way of knowing the current value of fields
+    // that they are not allowed to view, and we must not make the presence or
+    // absence of a 403 response a way to find that out.
+    if ($original_field->access('view') && $original_field->equals($received_field)) {
+      return FALSE;
+    }
+
+    // If the user is allowed to edit the field, it is always safe to set the
+    // received value. We may be setting an unchanged value, but that is ok.
+    $field_edit_access = $original_field->access('edit', NULL, TRUE);
+    if ($field_edit_access->isAllowed()) {
+      return TRUE;
+    }
+
+    // It's helpful and safe to let the user know when they are not allowed to
+    // update a field.
+    $field_name = $received_field->getName();
+    $error_message = "Access denied on updating field '$field_name'.";
+    if ($field_edit_access instanceof AccessResultReasonInterface) {
+      $reason = $field_edit_access->getReason();
+      if ($reason) {
+        $error_message .= ' ' . $reason;
+      }
+    }
+    throw new AccessDeniedHttpException($error_message);
   }
 
   /**
@@ -179,21 +315,18 @@ class EntityResource extends ResourceBase {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity object.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return \Drupal\rest\ModifiedResourceResponse
    *   The HTTP response object.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */
   public function delete(EntityInterface $entity) {
-    if (!$entity->access('delete')) {
-      throw new AccessDeniedHttpException();
-    }
     try {
       $entity->delete();
-      $this->logger->notice('Deleted entity %type with ID %id.', array('%type' => $entity->getEntityTypeId(), '%id' => $entity->id()));
+      $this->logger->notice('Deleted entity %type with ID %id.', ['%type' => $entity->getEntityTypeId(), '%id' => $entity->id()]);
 
-      // Delete responses have an empty body.
-      return new ResourceResponse(NULL, 204);
+      // DELETE responses have an empty body.
+      return new ModifiedResourceResponse(NULL, 204);
     }
     catch (EntityStorageException $e) {
       throw new HttpException(500, 'Internal Server Error', $e);
@@ -201,31 +334,37 @@ class EntityResource extends ResourceBase {
   }
 
   /**
-   * Verifies that the whole entity does not violate any validation constraints.
+   * Generates a fallback access denied message, when no specific reason is set.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity object.
+   * @param string $operation
+   *   The disallowed entity operation.
    *
-   * @throws \Symfony\Component\HttpKernel\Exception\HttpException
-   *   If validation errors are found.
+   * @return string
+   *   The proper message to display in the AccessDeniedHttpException.
    */
-  protected function validate(EntityInterface $entity) {
-    $violations = $entity->validate();
+  protected function generateFallbackAccessDeniedMessage(EntityInterface $entity, $operation) {
+    $message = "You are not authorized to {$operation} this {$entity->getEntityTypeId()} entity";
 
-    // Remove violations of inaccessible fields as they cannot stem from our
-    // changes.
-    $violations->filterByFieldAccess();
+    if ($entity->bundle() !== $entity->getEntityTypeId()) {
+      $message .= " of bundle {$entity->bundle()}";
+    }
+    return "{$message}.";
+  }
 
-    if (count($violations) > 0) {
-      $message = "Unprocessable Entity: validation failed.\n";
-      foreach ($violations as $violation) {
-        $message .= $violation->getPropertyPath() . ': ' . $violation->getMessage() . "\n";
-      }
-      // Instead of returning a generic 400 response we use the more specific
-      // 422 Unprocessable Entity code from RFC 4918. That way clients can
-      // distinguish between general syntax errors in bad serializations (code
-      // 400) and semantic errors in well-formed requests (code 422).
-      throw new HttpException(422, $message);
+  /**
+   * {@inheritdoc}
+   */
+  public function permissions() {
+    // @see https://www.drupal.org/node/2664780
+    if ($this->configFactory->get('rest.settings')->get('bc_entity_resource_permissions')) {
+      // The default Drupal 8.0.x and 8.1.x behavior.
+      return parent::permissions();
+    }
+    else {
+      // The default Drupal 8.2.x behavior.
+      return [];
     }
   }
 
@@ -234,14 +373,97 @@ class EntityResource extends ResourceBase {
    */
   protected function getBaseRoute($canonical_path, $method) {
     $route = parent::getBaseRoute($canonical_path, $method);
+
+    switch ($method) {
+      case 'GET':
+        $route->setRequirement('_entity_access', $this->entityType->id() . '.view');
+        break;
+      case 'POST':
+        $route->setRequirement('_entity_create_any_access', $this->entityType->id());
+        $route->setOption('_ignore_create_bundle_access', TRUE);
+        break;
+      case 'PATCH':
+        $route->setRequirement('_entity_access', $this->entityType->id() . '.update');
+        break;
+      case 'DELETE':
+        $route->setRequirement('_entity_access', $this->entityType->id() . '.delete');
+        break;
+    }
+
     $definition = $this->getPluginDefinition();
 
-    $parameters = $route->getOption('parameters') ?: array();
+    $parameters = $route->getOption('parameters') ?: [];
     $parameters[$definition['entity_type']]['type'] = 'entity:' . $definition['entity_type'];
     $route->setOption('parameters', $parameters);
 
     return $route;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function availableMethods() {
+    $methods = parent::availableMethods();
+    if ($this->isConfigEntityResource()) {
+      // Currently only GET is supported for Config Entities.
+      // @todo Remove when supported https://www.drupal.org/node/2300677
+      $unsupported_methods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+      $methods = array_diff($methods, $unsupported_methods);
+    }
+    return $methods;
+  }
+
+  /**
+   * Checks if this resource is for a Config Entity.
+   *
+   * @return bool
+   *   TRUE if the entity is a Config Entity, FALSE otherwise.
+   */
+  protected function isConfigEntityResource() {
+    return $this->entityType instanceof ConfigEntityType;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    if (isset($this->entityType)) {
+      return ['module' => [$this->entityType->getProvider()]];
+    }
+  }
+
+  /**
+   * Adds link headers to a response.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity.
+   * @param \Symfony\Component\HttpFoundation\Response $response
+   *   The response.
+   *
+   * @see https://tools.ietf.org/html/rfc5988#section-5
+   */
+  protected function addLinkHeaders(EntityInterface $entity, Response $response) {
+    foreach ($entity->uriRelationships() as $relation_name) {
+      if ($this->linkRelationTypeManager->hasDefinition($relation_name)) {
+        /** @var \Drupal\Core\Http\LinkRelationTypeInterface $link_relation_type */
+        $link_relation_type = $this->linkRelationTypeManager->createInstance($relation_name);
+
+        $generator_url = $entity->toUrl($relation_name)
+          ->setAbsolute(TRUE)
+          ->toString(TRUE);
+        if ($response instanceof CacheableResponseInterface) {
+          $response->addCacheableDependency($generator_url);
+        }
+        $uri = $generator_url->getGeneratedUrl();
+
+        $relationship = $link_relation_type->isRegistered()
+          ? $link_relation_type->getRegisteredName()
+          : $link_relation_type->getExtensionUri();
+
+        $link_header = '<' . $uri . '>; rel="' . $relationship . '"';
+        $response->headers->set('Link', $link_header, FALSE);
+      }
+    }
+  }
 
 }

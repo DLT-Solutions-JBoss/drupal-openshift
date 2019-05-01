@@ -1,20 +1,35 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Core\Config\Entity\ConfigEntityTypeTest.
- */
-
 namespace Drupal\Tests\Core\Config\Entity;
 
+use Drupal\Core\Config\TypedConfigManagerInterface;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Tests\UnitTestCase;
 use Drupal\Core\Config\Entity\ConfigEntityType;
+use Drupal\Core\Config\Entity\Exception\ConfigEntityStorageClassException;
 
 /**
  * @coversDefaultClass \Drupal\Core\Config\Entity\ConfigEntityType
  * @group Config
  */
 class ConfigEntityTypeTest extends UnitTestCase {
+
+  /**
+   * The mocked typed config manager.
+   *
+   * @var \Drupal\Core\Config\TypedConfigManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $typedConfigManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    $this->typedConfigManager = $this->getMock(TypedConfigManagerInterface::class);
+    $container = new ContainerBuilder();
+    $container->set('config.typed', $this->typedConfigManager);
+    \Drupal::setContainer($container);
+  }
 
   /**
    * Sets up a ConfigEntityType object for a given set of values.
@@ -26,9 +41,9 @@ class ConfigEntityTypeTest extends UnitTestCase {
    */
   protected function setUpConfigEntityType($definition) {
     if (!isset($definition['id'])) {
-      $definition += array(
+      $definition += [
         'id' => 'example_config_entity_type',
-      );
+      ];
     }
     return new ConfigEntityType($definition);
   }
@@ -42,10 +57,10 @@ class ConfigEntityTypeTest extends UnitTestCase {
   public function testConfigPrefixLengthExceeds() {
     // A provider length of 24 and config_prefix length of 59 (+1 for the .)
     // results in a config length of 84, which is too long.
-    $definition = array(
+    $definition = [
       'provider' => $this->randomMachineName(24),
       'config_prefix' => $this->randomMachineName(59),
-    );
+    ];
     $config_entity = $this->setUpConfigEntityType($definition);
     $this->setExpectedException(
       '\Drupal\Core\Config\ConfigPrefixLengthException',
@@ -63,10 +78,10 @@ class ConfigEntityTypeTest extends UnitTestCase {
   public function testConfigPrefixLengthValid() {
     // A provider length of 24 and config_prefix length of 58 (+1 for the .)
     // results in a config length of 83, which is right at the limit.
-    $definition = array(
+    $definition = [
       'provider' => $this->randomMachineName(24),
       'config_prefix' => $this->randomMachineName(58),
-    );
+    ];
     $config_entity = $this->setUpConfigEntityType($definition);
     $expected_prefix = $definition['provider'] . '.' . $definition['config_prefix'];
     $this->assertEquals($expected_prefix, $config_entity->getConfigPrefix());
@@ -84,25 +99,21 @@ class ConfigEntityTypeTest extends UnitTestCase {
 
   /**
    * @covers ::__construct
-   *
-   * @expectedException \Drupal\Core\Config\Entity\Exception\ConfigEntityStorageClassException
-   * @expectedExceptionMessage \Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage is not \Drupal\Core\Config\Entity\ConfigEntityStorage or it does not extend it
    */
   public function testConstructBadStorage() {
+    $this->setExpectedException(ConfigEntityStorageClassException::class, '\Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage is not \Drupal\Core\Config\Entity\ConfigEntityStorage or it does not extend it');
     new ConfigEntityType([
       'id' => 'example_config_entity_type',
-      'handlers' => ['storage' => '\Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage']
+      'handlers' => ['storage' => '\Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage'],
     ]);
   }
 
   /**
    * @covers ::setStorageClass
-   *
-   * @expectedException \Drupal\Core\Config\Entity\Exception\ConfigEntityStorageClassException
-   * @expectedExceptionMessage \Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage is not \Drupal\Core\Config\Entity\ConfigEntityStorage or it does not extend it
    */
   public function testSetStorageClass() {
     $config_entity = $this->setUpConfigEntityType([]);
+    $this->setExpectedException(ConfigEntityStorageClassException::class, '\Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage is not \Drupal\Core\Config\Entity\ConfigEntityStorage or it does not extend it');
     $config_entity->setStorageClass('\Drupal\Core\Entity\KeyValueStore\KeyValueEntityStorage');
   }
 
@@ -122,10 +133,10 @@ class ConfigEntityTypeTest extends UnitTestCase {
    * Provides test data.
    */
   public function providerTestGetConfigPrefix() {
-    return array(
-      array(array('provider' => 'node', 'id' => 'node_type', 'config_prefix' => 'type'), 'node.type'),
-      array(array('provider' => 'views', 'id' => 'view'), 'views.view'),
-    );
+    return [
+      [['provider' => 'node', 'id' => 'node_type', 'config_prefix' => 'type'], 'node.type'],
+      [['provider' => 'views', 'id' => 'view'], 'views.view'],
+    ];
   }
 
   /**
@@ -146,11 +157,6 @@ class ConfigEntityTypeTest extends UnitTestCase {
   public function providerGetPropertiesToExport() {
     $data = [];
     $data[] = [
-      [],
-      NULL,
-    ];
-
-    $data[] = [
       [
         'config_export' => [
           'id',
@@ -163,6 +169,7 @@ class ConfigEntityTypeTest extends UnitTestCase {
         'status' => 'status',
         'dependencies' => 'dependencies',
         'third_party_settings' => 'third_party_settings',
+        '_core' => '_core',
         'id' => 'id',
         'custom_property' => 'customProperty',
       ],
@@ -182,6 +189,29 @@ class ConfigEntityTypeTest extends UnitTestCase {
       ],
     ];
     return $data;
+  }
+
+  /**
+   * @covers ::getPropertiesToExport
+   */
+  public function testGetPropertiesToExportSchemaFallback() {
+    $this->typedConfigManager->expects($this->once())
+      ->method('getDefinition')
+      ->will($this->returnValue(['mapping' => ['id' => '', 'dependencies' => '']]));
+    $config_entity_type = new ConfigEntityType([
+      'id' => 'example_config_entity_type',
+    ]);
+    $this->assertEquals(['id' => 'id', 'dependencies' => 'dependencies'], $config_entity_type->getPropertiesToExport('test'));
+  }
+
+  /**
+   * @covers ::getPropertiesToExport
+   */
+  public function testGetPropertiesToExportNoFallback() {
+    $config_entity_type = new ConfigEntityType([
+      'id' => 'example_config_entity_type',
+    ]);
+    $this->assertNull($config_entity_type->getPropertiesToExport());
   }
 
 }

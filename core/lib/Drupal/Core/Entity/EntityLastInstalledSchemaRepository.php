@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Entity\EntityLastInstalledSchemaRepository.
- */
-
 namespace Drupal\Core\Entity;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -37,6 +32,28 @@ class EntityLastInstalledSchemaRepository implements EntityLastInstalledSchemaRe
    */
   public function getLastInstalledDefinition($entity_type_id) {
     return $this->keyValueFactory->get('entity.definitions.installed')->get($entity_type_id . '.entity_type');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getLastInstalledDefinitions() {
+    $all_definitions = $this->keyValueFactory->get('entity.definitions.installed')->getAll();
+
+    // Filter out field storage definitions.
+    $filtered_keys = array_filter(array_keys($all_definitions), function ($key) {
+        return substr($key, -12) === '.entity_type';
+    });
+    $entity_type_definitions = array_intersect_key($all_definitions, array_flip($filtered_keys));
+
+    // Ensure that the returned array is keyed by the entity type ID.
+    $keys = array_keys($entity_type_definitions);
+    $keys = array_map(function ($key) {
+      $parts = explode('.', $key);
+      return $parts[0];
+    }, $keys);
+
+    return array_combine($keys, $entity_type_definitions);
   }
 
   /**

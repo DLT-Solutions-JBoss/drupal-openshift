@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Routing\Matcher;
 
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\ExceptionInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
@@ -40,6 +41,15 @@ class TraceableUrlMatcher extends UrlMatcher
         return $this->traces;
     }
 
+    public function getTracesForRequest(Request $request)
+    {
+        $this->request = $request;
+        $traces = $this->getTraces($request->getPathInfo());
+        $this->request = null;
+
+        return $traces;
+    }
+
     protected function matchCollection($pathinfo, RouteCollection $routes)
     {
         foreach ($routes as $name => $route) {
@@ -59,7 +69,7 @@ class TraceableUrlMatcher extends UrlMatcher
                     $r = new Route($route->getPath(), $route->getDefaults(), array($n => $regex), $route->getOptions());
                     $cr = $r->compile();
 
-                    if (in_array($n, $cr->getVariables()) && !preg_match($cr->getRegex(), $pathinfo)) {
+                    if (\in_array($n, $cr->getVariables()) && !preg_match($cr->getRegex(), $pathinfo)) {
                         $this->addTrace(sprintf('Requirement for "%s" does not match (%s)', $n, $regex), self::ROUTE_ALMOST_MATCHES, $name, $route);
 
                         continue 2;
@@ -84,7 +94,7 @@ class TraceableUrlMatcher extends UrlMatcher
                     $method = 'GET';
                 }
 
-                if (!in_array($method, $requiredMethods)) {
+                if (!\in_array($method, $requiredMethods)) {
                     $this->allow = array_merge($this->allow, $requiredMethods);
 
                     $this->addTrace(sprintf('Method "%s" does not match any of the required methods (%s)', $this->context->getMethod(), implode(', ', $requiredMethods)), self::ROUTE_ALMOST_MATCHES, $name, $route);
@@ -95,7 +105,7 @@ class TraceableUrlMatcher extends UrlMatcher
 
             // check condition
             if ($condition = $route->getCondition()) {
-                if (!$this->getExpressionLanguage()->evaluate($condition, array('context' => $this->context, 'request' => $this->request))) {
+                if (!$this->getExpressionLanguage()->evaluate($condition, array('context' => $this->context, 'request' => $this->request ?: $this->createRequest($pathinfo)))) {
                     $this->addTrace(sprintf('Condition "%s" does not evaluate to "true"', $condition), self::ROUTE_ALMOST_MATCHES, $name, $route);
 
                     continue;

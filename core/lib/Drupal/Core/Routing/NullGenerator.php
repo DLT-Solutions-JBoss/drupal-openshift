@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Routing\NullGenerator.
- */
-
 namespace Drupal\Core\Routing;
 
 use Drupal\Core\Render\BubbleableMetadata;
@@ -32,8 +27,8 @@ class NullGenerator extends UrlGenerator {
   /**
    * {@inheritdoc}
    *
-   * generate(), generateFromRoute(), and getPathFromRoute() all call this
-   * protected method.
+   * Methods generate(), generateFromRoute() and getPathFromRoute() all call
+   * this protected method.
    */
   protected function getRoute($name) {
     if ($name === '<front>') {
@@ -57,7 +52,7 @@ class NullGenerator extends UrlGenerator {
   /**
    * {@inheritdoc}
    */
-  protected function getInternalPathFromRoute($name, Route $route, $parameters = array(), $query_params = array()) {
+  protected function getInternalPathFromRoute($name, Route $route, $parameters = [], &$query_params = []) {
     return $route->getPath();
   }
 
@@ -76,7 +71,8 @@ class NullGenerator extends UrlGenerator {
   /**
    * {@inheritdoc}
    */
-  protected function processPath($path, &$options = array(), BubbleableMetadata $bubbleable_metadata = NULL) {
+  protected function processPath($path, &$options = [], BubbleableMetadata $bubbleable_metadata = NULL) {
     return $path;
   }
+
 }

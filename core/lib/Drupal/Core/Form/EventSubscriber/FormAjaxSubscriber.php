@@ -1,19 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Form\EventSubscriber\FormAjaxSubscriber.
- */
-
 namespace Drupal\Core\Form\EventSubscriber;
 
 use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\ReplaceCommand;
+use Drupal\Core\Ajax\PrependCommand;
 use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Form\Exception\BrokenPostRequestException;
 use Drupal\Core\Form\FormAjaxException;
 use Drupal\Core\Form\FormAjaxResponseBuilderInterface;
 use Drupal\Core\Form\FormBuilderInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -36,16 +32,26 @@ class FormAjaxSubscriber implements EventSubscriberInterface {
   protected $formAjaxResponseBuilder;
 
   /**
+   * The messenger.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
    * Constructs a new FormAjaxSubscriber.
    *
    * @param \Drupal\Core\Form\FormAjaxResponseBuilderInterface $form_ajax_response_builder
    *   The form AJAX response builder.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
    */
-  public function __construct(FormAjaxResponseBuilderInterface $form_ajax_response_builder, TranslationInterface $string_translation) {
+  public function __construct(FormAjaxResponseBuilderInterface $form_ajax_response_builder, TranslationInterface $string_translation, MessengerInterface $messenger) {
     $this->formAjaxResponseBuilder = $form_ajax_response_builder;
     $this->stringTranslation = $string_translation;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -80,11 +86,11 @@ class FormAjaxSubscriber implements EventSubscriberInterface {
     // Render a nice error message in case we have a file upload which exceeds
     // the configured upload limit.
     if ($exception instanceof BrokenPostRequestException && $request->query->has(FormBuilderInterface::AJAX_FORM_REQUEST)) {
-      $this->drupalSetMessage($this->t('An unrecoverable error occurred. The uploaded file likely exceeded the maximum file size (@size) that this server supports.', ['@size' => $this->formatSize($exception->getSize())]), 'error');
-      $response = new AjaxResponse();
+      $this->messenger->addError($this->t('An unrecoverable error occurred. The uploaded file likely exceeded the maximum file size (@size) that this server supports.', ['@size' => $this->formatSize($exception->getSize())]));
+      $response = new AjaxResponse(NULL, 200);
       $status_messages = ['#type' => 'status_messages'];
-      $response->addCommand(new ReplaceCommand(NULL, $status_messages));
-      $response->headers->set('X-Status-Code', 200);
+      $response->addCommand(new PrependCommand(NULL, $status_messages));
+      $event->allowCustomResponseCode();
       $event->setResponse($response);
       return;
     }
@@ -97,14 +103,15 @@ class FormAjaxSubscriber implements EventSubscriberInterface {
       $form_state = $exception->getFormState();
 
       // Set the build ID from the request as the old build ID on the form.
-      $form['#build_id_old'] = $request->get('form_build_id');
+      $form['#build_id_old'] = $request->request->get('form_build_id');
 
       try {
         $response = $this->formAjaxResponseBuilder->buildResponse($request, $form, $form_state, []);
 
         // Since this response is being set in place of an exception, explicitly
         // mark this as a 200 status.
-        $response->headers->set('X-Status-Code', 200);
+        $response->setStatusCode(200);
+        $event->allowCustomResponseCode();
         $event->setResponse($response);
       }
       catch (\Exception $e) {
@@ -118,7 +125,7 @@ class FormAjaxSubscriber implements EventSubscriberInterface {
    * Extracts a form AJAX exception.
    *
    * @param \Exception $e
-   *  A generic exception that might contain a form AJAX exception.
+   *   A generic exception that might contain a form AJAX exception.
    *
    * @return \Drupal\Core\Form\FormAjaxException|null
    *   Either the form AJAX exception, or NULL if none could be found.
@@ -156,15 +163,6 @@ class FormAjaxSubscriber implements EventSubscriberInterface {
     $events[KernelEvents::VIEW][] = ['onView', 1];
 
     return $events;
-  }
-
-  /**
-   * Wraps drupal_set_message().
-   *
-   * @codeCoverageIgnore
-   */
-  protected function drupalSetMessage($message = NULL, $type = 'status', $repeat = FALSE) {
-    drupal_set_message($message, $type, $repeat);
   }
 
 }

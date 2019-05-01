@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Core\Cache\CacheTest.
- */
-
 namespace Drupal\Tests\Core\Cache;
 
 use Drupal\Core\Cache\Cache;
@@ -58,7 +53,6 @@ class CacheTest extends UnitTestCase {
     $this->assertNull(Cache::validateTags($tags));
   }
 
-
   /**
    * Provides a list of pairs of cache tags arrays to be merged.
    *
@@ -106,7 +100,6 @@ class CacheTest extends UnitTestCase {
       [60, Cache::PERMANENT, 60],
     ];
   }
-
 
   /**
    * @covers ::mergeMaxAges

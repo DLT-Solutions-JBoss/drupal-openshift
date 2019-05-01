@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Component\Render\HtmlEscapedText.
- */
-
 namespace Drupal\Component\Render;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * Escapes HTML syntax characters to HTML entities for display in markup.
@@ -48,7 +42,7 @@ class HtmlEscapedText implements MarkupInterface, \Countable {
    * {@inheritdoc}
    */
   public function count() {
-    return Unicode::strlen($this->string);
+    return mb_strlen($this->string);
   }
 
   /**

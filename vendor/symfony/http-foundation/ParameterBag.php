@@ -20,17 +20,13 @@ class ParameterBag implements \IteratorAggregate, \Countable
 {
     /**
      * Parameter storage.
-     *
-     * @var array
      */
     protected $parameters;
 
     /**
-     * Constructor.
-     *
      * @param array $parameters An array of parameters
      */
-    public function __construct(array $parameters = array())
+    public function __construct(array $parameters = [])
     {
         $this->parameters = $parameters;
     }
@@ -60,7 +56,7 @@ class ParameterBag implements \IteratorAggregate, \Countable
      *
      * @param array $parameters An array of parameters
      */
-    public function replace(array $parameters = array())
+    public function replace(array $parameters = [])
     {
         $this->parameters = $parameters;
     }
@@ -70,7 +66,7 @@ class ParameterBag implements \IteratorAggregate, \Countable
      *
      * @param array $parameters An array of parameters
      */
-    public function add(array $parameters = array())
+    public function add(array $parameters = [])
     {
         $this->parameters = array_replace($this->parameters, $parameters);
     }
@@ -78,61 +74,14 @@ class ParameterBag implements \IteratorAggregate, \Countable
     /**
      * Returns a parameter by name.
      *
-     * @param string $path    The key
+     * @param string $key     The key
      * @param mixed  $default The default value if the parameter key does not exist
-     * @param bool   $deep    If true, a path like foo[bar] will find deeper items
      *
      * @return mixed
-     *
-     * @throws \InvalidArgumentException
      */
-    public function get($path, $default = null, $deep = false)
+    public function get($key, $default = null)
     {
-        if (!$deep || false === $pos = strpos($path, '[')) {
-            return array_key_exists($path, $this->parameters) ? $this->parameters[$path] : $default;
-        }
-
-        $root = substr($path, 0, $pos);
-        if (!array_key_exists($root, $this->parameters)) {
-            return $default;
-        }
-
-        $value = $this->parameters[$root];
-        $currentKey = null;
-        for ($i = $pos, $c = strlen($path); $i < $c; ++$i) {
-            $char = $path[$i];
-
-            if ('[' === $char) {
-                if (null !== $currentKey) {
-                    throw new \InvalidArgumentException(sprintf('Malformed path. Unexpected "[" at position %d.', $i));
-                }
-
-                $currentKey = '';
-            } elseif (']' === $char) {
-                if (null === $currentKey) {
-                    throw new \InvalidArgumentException(sprintf('Malformed path. Unexpected "]" at position %d.', $i));
-                }
-
-                if (!is_array($value) || !array_key_exists($currentKey, $value)) {
-                    return $default;
-                }
-
-                $value = $value[$currentKey];
-                $currentKey = null;
-            } else {
-                if (null === $currentKey) {
-                    throw new \InvalidArgumentException(sprintf('Malformed path. Unexpected "%s" at position %d.', $char, $i));
-                }
-
-                $currentKey .= $char;
-            }
-        }
-
-        if (null !== $currentKey) {
-            throw new \InvalidArgumentException(sprintf('Malformed path. Path must end with "]".'));
-        }
-
-        return $value;
+        return \array_key_exists($key, $this->parameters) ? $this->parameters[$key] : $default;
     }
 
     /**
@@ -155,7 +104,7 @@ class ParameterBag implements \IteratorAggregate, \Countable
      */
     public function has($key)
     {
-        return array_key_exists($key, $this->parameters);
+        return \array_key_exists($key, $this->parameters);
     }
 
     /**
@@ -172,97 +121,91 @@ class ParameterBag implements \IteratorAggregate, \Countable
      * Returns the alphabetic characters of the parameter value.
      *
      * @param string $key     The parameter key
-     * @param mixed  $default The default value if the parameter key does not exist
-     * @param bool   $deep    If true, a path like foo[bar] will find deeper items
+     * @param string $default The default value if the parameter key does not exist
      *
      * @return string The filtered value
      */
-    public function getAlpha($key, $default = '', $deep = false)
+    public function getAlpha($key, $default = '')
     {
-        return preg_replace('/[^[:alpha:]]/', '', $this->get($key, $default, $deep));
+        return preg_replace('/[^[:alpha:]]/', '', $this->get($key, $default));
     }
 
     /**
      * Returns the alphabetic characters and digits of the parameter value.
      *
      * @param string $key     The parameter key
-     * @param mixed  $default The default value if the parameter key does not exist
-     * @param bool   $deep    If true, a path like foo[bar] will find deeper items
+     * @param string $default The default value if the parameter key does not exist
      *
      * @return string The filtered value
      */
-    public function getAlnum($key, $default = '', $deep = false)
+    public function getAlnum($key, $default = '')
     {
-        return preg_replace('/[^[:alnum:]]/', '', $this->get($key, $default, $deep));
+        return preg_replace('/[^[:alnum:]]/', '', $this->get($key, $default));
     }
 
     /**
      * Returns the digits of the parameter value.
      *
      * @param string $key     The parameter key
-     * @param mixed  $default The default value if the parameter key does not exist
-     * @param bool   $deep    If true, a path like foo[bar] will find deeper items
+     * @param string $default The default value if the parameter key does not exist
      *
      * @return string The filtered value
      */
-    public function getDigits($key, $default = '', $deep = false)
+    public function getDigits($key, $default = '')
     {
         // we need to remove - and + because they're allowed in the filter
-        return str_replace(array('-', '+'), '', $this->filter($key, $default, $deep, FILTER_SANITIZE_NUMBER_INT));
+        return str_replace(['-', '+'], '', $this->filter($key, $default, FILTER_SANITIZE_NUMBER_INT));
     }
 
     /**
      * Returns the parameter value converted to integer.
      *
      * @param string $key     The parameter key
-     * @param mixed  $default The default value if the parameter key does not exist
-     * @param bool   $deep    If true, a path like foo[bar] will find deeper items
+     * @param int    $default The default value if the parameter key does not exist
      *
      * @return int The filtered value
      */
-    public function getInt($key, $default = 0, $deep = false)
+    public function getInt($key, $default = 0)
     {
-        return (int) $this->get($key, $default, $deep);
+        return (int) $this->get($key, $default);
     }
 
     /**
      * Returns the parameter value converted to boolean.
      *
      * @param string $key     The parameter key
-     * @param mixed  $default The default value if the parameter key does not exist
-     * @param bool   $deep    If true, a path like foo[bar] will find deeper items
+     * @param bool   $default The default value if the parameter key does not exist
      *
      * @return bool The filtered value
      */
-    public function getBoolean($key, $default = false, $deep = false)
+    public function getBoolean($key, $default = false)
     {
-        return $this->filter($key, $default, $deep, FILTER_VALIDATE_BOOLEAN);
+        return $this->filter($key, $default, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
      * Filter key.
      *
-     * @param string $key     Key.
-     * @param mixed  $default Default = null.
-     * @param bool   $deep    Default = false.
-     * @param int    $filter  FILTER_* constant.
-     * @param mixed  $options Filter options.
+     * @param string $key     Key
+     * @param mixed  $default Default = null
+     * @param int    $filter  FILTER_* constant
+     * @param mixed  $options Filter options
      *
      * @see http://php.net/manual/en/function.filter-var.php
      *
      * @return mixed
      */
-    public function filter($key, $default = null, $deep = false, $filter = FILTER_DEFAULT, $options = array())
+    public function filter($key, $default = null, $filter = FILTER_DEFAULT, $options = [])
     {
-        $value = $this->get($key, $default, $deep);
+        $value = $this->get($key, $default);
 
         // Always turn $options into an array - this allows filter_var option shortcuts.
-        if (!is_array($options) && $options) {
-            $options = array('flags' => $options);
+        if (!\is_array($options) && $options) {
+            $options = ['flags' => $options];
         }
 
         // Add a convenience check for arrays.
-        if (is_array($value) && !isset($options['flags'])) {
+        if (\is_array($value) && !isset($options['flags'])) {
             $options['flags'] = FILTER_REQUIRE_ARRAY;
         }
 
@@ -286,6 +229,6 @@ class ParameterBag implements \IteratorAggregate, \Countable
      */
     public function count()
     {
-        return count($this->parameters);
+        return \count($this->parameters);
     }
 }

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\EventSubscriber\Fast404ExceptionHtmlSubscriber.
- */
-
 namespace Drupal\Core\EventSubscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -48,7 +43,6 @@ class Fast404ExceptionHtmlSubscriber extends HttpExceptionSubscriberBase {
     $this->httpKernel = $http_kernel;
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -59,7 +53,7 @@ class Fast404ExceptionHtmlSubscriber extends HttpExceptionSubscriberBase {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   protected function getHandledFormats() {
     return ['html'];

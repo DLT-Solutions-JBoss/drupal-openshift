@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Asset\JsOptimizer.
- */
-
 namespace Drupal\Core\Asset;
 
 use Drupal\Component\Utility\Unicode;
@@ -21,7 +16,7 @@ class JsOptimizer implements AssetOptimizerInterface {
     if ($js_asset['type'] !== 'file') {
       throw new \Exception('Only file JavaScript assets can be optimized.');
     }
-    if ($js_asset['type'] === 'file' && !$js_asset['preprocess']) {
+    if (!$js_asset['preprocess']) {
       throw new \Exception('Only file JavaScript assets with preprocessing enabled can be optimized.');
     }
 
@@ -29,7 +24,7 @@ class JsOptimizer implements AssetOptimizerInterface {
     // remove the BOM from the result.
     $data = file_get_contents($js_asset['data']);
     if ($encoding = (Unicode::encodingFromBOM($data))) {
-      $data = Unicode::substr(Unicode::convertToUtf8($data, $encoding), 1);
+      $data = mb_substr(Unicode::convertToUtf8($data, $encoding), 1);
     }
     // If no BOM is found, check for the charset attribute.
     elseif (isset($js_asset['attributes']['charset'])) {

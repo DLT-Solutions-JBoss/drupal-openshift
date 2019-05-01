@@ -1,31 +1,84 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\migrate\Plugin\migrate\destination\EntityContentBase.
- */
-
 namespace Drupal\migrate\Plugin\migrate\destination;
 
-use Drupal\Component\Utility\Random;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
-use Drupal\link\LinkItemInterface;
-use Drupal\migrate\Entity\MigrationInterface;
+use Drupal\migrate\Audit\HighestIdInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * The destination class for all content entities lacking a specific class.
+ * Provides destination class for all content entities lacking a specific class.
+ *
+ * Available configuration keys:
+ * - translations: (optional) Boolean, indicates if the entity is translatable,
+ *   defaults to FALSE.
+ * - overwrite_properties: (optional) A list of properties that will be
+ *   overwritten if an entity with the same ID already exists. Any properties
+ *   that are not listed will not be overwritten.
+ *
+ * Example:
+ *
+ * The example below will create a 'node' entity of content type 'article'.
+ *
+ * The language of the source will be used because the configuration
+ * 'translations: true' was set. Without this configuration option the site's
+ * default language would be used.
+ *
+ * The example content type has fields 'title', 'body' and 'field_example'.
+ * The text format of the body field is defaulted to 'basic_html'. The example
+ * uses the EmbeddedDataSource source plugin for the sake of simplicity.
+ *
+ * If the migration is executed again in an update mode, any updates done in the
+ * destination Drupal site to the 'title' and 'body' fields would be overwritten
+ * with the original source values. Updates done to 'field_example' would be
+ * preserved because 'field_example' is not included in 'overwrite_properties'
+ * configuration.
+ * @code
+ * id: custom_article_migration
+ * label: Custom article migration
+ * source:
+ *   plugin: embedded_data
+ *   data_rows:
+ *     -
+ *       id: 1
+ *       langcode: 'fi'
+ *       title: 'Sivun otsikko'
+ *       field_example: 'Huhuu'
+ *       content: '<p>Hoi maailma</p>'
+ *   ids:
+ *     id:
+ *       type: integer
+ * process:
+ *   nid: id
+ *   langcode: langcode
+ *   title: title
+ *   field_example: field_example
+ *   'body/0/value': content
+ *   'body/0/format':
+ *     plugin: default_value
+ *     default_value: basic_html
+ * destination:
+ *   plugin: entity:node
+ *   default_bundle: article
+ *   translations: true
+ *   overwrite_properties:
+ *     - title
+ *     - body
+ * @endcode
+ *
+ * @see \Drupal\migrate\Plugin\migrate\destination\EntityRevision
  */
-class EntityContentBase extends Entity {
+class EntityContentBase extends Entity implements HighestIdInterface {
 
   /**
    * Entity manager.
@@ -50,7 +103,7 @@ class EntityContentBase extends Entity {
    *   The plugin ID for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
-   * @param \Drupal\migrate\Entity\MigrationInterface $migration
+   * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration entity.
    * @param \Drupal\Core\Entity\EntityStorageInterface $storage
    *   The storage for this entity type.
@@ -87,53 +140,99 @@ class EntityContentBase extends Entity {
   /**
    * {@inheritdoc}
    */
-  public function import(Row $row, array $old_destination_id_values = array()) {
+  public function import(Row $row, array $old_destination_id_values = []) {
     $this->rollbackAction = MigrateIdMapInterface::ROLLBACK_DELETE;
     $entity = $this->getEntity($row, $old_destination_id_values);
     if (!$entity) {
       throw new MigrateException('Unable to get entity');
     }
-    return $this->save($entity, $old_destination_id_values);
+
+    $ids = $this->save($entity, $old_destination_id_values);
+    if ($this->isTranslationDestination()) {
+      $ids[] = $entity->language()->getId();
+    }
+    return $ids;
   }
 
   /**
-   * Save the entity.
+   * Saves the entity.
    *
    * @param \Drupal\Core\Entity\ContentEntityInterface $entity
    *   The content entity.
    * @param array $old_destination_id_values
-   *   An array of destination id values.
+   *   (optional) An array of destination ID values. Defaults to an empty array.
    *
    * @return array
-   *   An array containing the entity id.
+   *   An array containing the entity ID.
    */
-  protected function save(ContentEntityInterface $entity, array $old_destination_id_values = array()) {
+  protected function save(ContentEntityInterface $entity, array $old_destination_id_values = []) {
     $entity->save();
-    return array($entity->id());
+    return [$entity->id()];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isTranslationDestination() {
+    return !empty($this->configuration['translations']);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getIds() {
+    $ids = [];
+
     $id_key = $this->getKey('id');
-    $ids[$id_key]['type'] = 'integer';
+    $ids[$id_key] = $this->getDefinitionFromEntity($id_key);
+
+    if ($this->isTranslationDestination()) {
+      $langcode_key = $this->getKey('langcode');
+      if (!$langcode_key) {
+        throw new MigrateException(sprintf('The "%s" entity type does not support translations.', $this->storage->getEntityTypeId()));
+      }
+      $ids[$langcode_key] = $this->getDefinitionFromEntity($langcode_key);
+    }
+
     return $ids;
   }
 
   /**
-   * Update an entity with the new values from row.
+   * Updates an entity with the new values from row.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity to update.
    * @param \Drupal\migrate\Row $row
    *   The row object to update from.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface
+   *   An updated entity from row values.
    */
   protected function updateEntity(EntityInterface $entity, Row $row) {
+    $empty_destinations = $row->getEmptyDestinationProperties();
+    // By default, an update will be preserved.
+    $rollback_action = MigrateIdMapInterface::ROLLBACK_PRESERVE;
+
+    // Make sure we have the right translation.
+    if ($this->isTranslationDestination()) {
+      $property = $this->storage->getEntityType()->getKey('langcode');
+      if ($row->hasDestinationProperty($property)) {
+        $language = $row->getDestinationProperty($property);
+        if (!$entity->hasTranslation($language)) {
+          $entity->addTranslation($language);
+
+          // We're adding a translation, so delete it on rollback.
+          $rollback_action = MigrateIdMapInterface::ROLLBACK_DELETE;
+        }
+        $entity = $entity->getTranslation($language);
+      }
+    }
+
     // If the migration has specified a list of properties to be overwritten,
     // clone the row with an empty set of destination values, and re-add only
     // the specified properties.
     if (isset($this->configuration['overwrite_properties'])) {
+      $empty_destinations = array_intersect($empty_destinations, $this->configuration['overwrite_properties']);
       $clone = $row->cloneWithoutDestination();
       foreach ($this->configuration['overwrite_properties'] as $property) {
         $clone->setDestinationProperty($property, $row->getDestinationProperty($property));
@@ -147,12 +246,18 @@ class EntityContentBase extends Entity {
         $field->setValue($values);
       }
     }
+    foreach ($empty_destinations as $field_name) {
+      $entity->$field_name = NULL;
+    }
 
-    $this->setRollbackAction($row->getIdMap());
+    $this->setRollbackAction($row->getIdMap(), $rollback_action);
+
+    // We might have a different (translated) entity, so return it.
+    return $entity;
   }
 
   /**
-   * Do as much population of the stub row as we can.
+   * Populates as much of the stub row as possible.
    *
    * @param \Drupal\migrate\Row $row
    *   The row of data.
@@ -173,7 +278,7 @@ class EntityContentBase extends Entity {
       if ($field_definition->isRequired() && is_null($row->getDestinationProperty($field_name))) {
         // Use the configured default value for this specific field, if any.
         if ($default_value = $field_definition->getDefaultValueLiteral()) {
-          $values[] = $default_value;
+          $values = $default_value;
         }
         else {
           // Otherwise, ask the field type to generate a sample value.
@@ -185,13 +290,80 @@ class EntityContentBase extends Entity {
           if (is_null($values)) {
             // Handle failure to generate a sample value.
             throw new MigrateException('Stubbing failed, unable to generate value for field ' . $field_name);
-            break;
           }
         }
 
         $row->setDestinationProperty($field_name, $values);
       }
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function rollback(array $destination_identifier) {
+    if ($this->isTranslationDestination()) {
+      // Attempt to remove the translation.
+      $entity = $this->storage->load(reset($destination_identifier));
+      if ($entity && $entity instanceof TranslatableInterface) {
+        if ($key = $this->getKey('langcode')) {
+          if (isset($destination_identifier[$key])) {
+            $langcode = $destination_identifier[$key];
+            if ($entity->hasTranslation($langcode)) {
+              // Make sure we don't remove the default translation.
+              $translation = $entity->getTranslation($langcode);
+              if (!$translation->isDefaultTranslation()) {
+                $entity->removeTranslation($langcode);
+                $entity->save();
+              }
+            }
+          }
+        }
+      }
+    }
+    else {
+      parent::rollback($destination_identifier);
+    }
+  }
+
+  /**
+   * Gets the field definition from a specific entity base field.
+   *
+   * The method takes the field ID as an argument and returns the field storage
+   * definition to be used in getIds() by querying the destination entity base
+   * field definition.
+   *
+   * @param string $key
+   *   The field ID key.
+   *
+   * @return array
+   *   An associative array with a structure that contains the field type, keyed
+   *   as 'type', together with field storage settings as they are returned by
+   *   FieldStorageDefinitionInterface::getSettings().
+   *
+   * @see \Drupal\Core\Field\FieldStorageDefinitionInterface::getSettings()
+   */
+  protected function getDefinitionFromEntity($key) {
+    $entity_type_id = static::getEntityTypeId($this->getPluginId());
+    /** @var \Drupal\Core\Field\FieldStorageDefinitionInterface[] $definitions */
+    $definitions = $this->entityManager->getBaseFieldDefinitions($entity_type_id);
+    $field_definition = $definitions[$key];
+
+    return [
+      'type' => $field_definition->getType(),
+    ] + $field_definition->getSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getHighestId() {
+    $values = $this->storage->getQuery()
+      ->accessCheck(FALSE)
+      ->sort($this->getKey('id'), 'DESC')
+      ->range(0, 1)
+      ->execute();
+    return (int) current($values);
   }
 
 }

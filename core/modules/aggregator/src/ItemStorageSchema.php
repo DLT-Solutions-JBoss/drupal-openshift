@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\aggregator\ItemStorageSchema.
- */
-
 namespace Drupal\aggregator;
 
 use Drupal\Core\Entity\Sql\SqlContentEntityStorageSchema;
@@ -22,7 +17,7 @@ class ItemStorageSchema extends SqlContentEntityStorageSchema {
     $schema = parent::getSharedTableFieldSchema($storage_definition, $table_name, $column_mapping);
     $field_name = $storage_definition->getName();
 
-    if ($table_name == 'aggregator_item') {
+    if ($table_name == $this->storage->getBaseTable()) {
       switch ($field_name) {
         case 'timestamp':
           $this->addSharedTableFieldIndex($storage_definition, $schema, TRUE);

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\contact\Access\ContactPageAccess.
- */
-
 namespace Drupal\contact\Access;
 
 use Drupal\Core\Access\AccessResult;
@@ -29,7 +24,7 @@ class ContactPageAccess implements AccessInterface {
   /**
    * The user data service.
    *
-   * @var \Drupal\user\UserDataInterface;
+   * @var \Drupal\user\UserDataInterface
    */
   protected $userData;
 
@@ -79,7 +74,7 @@ class ContactPageAccess implements AccessInterface {
     }
 
     // If requested user has been blocked, do not allow users to contact them.
-    $access->cacheUntilEntityChanges($contact_account);
+    $access->addCacheableDependency($contact_account);
     if ($contact_account->isBlocked()) {
       return $access;
     }

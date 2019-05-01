@@ -1,19 +1,26 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\migrate\Plugin\migrate\source\EmptySource.
- */
-
 namespace Drupal\migrate\Plugin\migrate\source;
 
 /**
- * Source returning an empty row.
+ * Source returning a row based on the constants provided.
  *
- * This is generally useful when needing to create a field using a migration..
+ * Example:
+ *
+ * @code
+ * source:
+ *   plugin: empty
+ *   constants:
+ *     entity_type: user
+ *     field_name: image
+ * @endcode
+ *
+ * This will return a single row containing 'entity_type' and 'field_name'
+ * elements, with values of 'user' and 'image', respectively.
  *
  * @MigrateSource(
- *   id = "empty"
+ *   id = "empty",
+ *   source_module = "migrate"
  * )
  */
 class EmptySource extends SourcePluginBase {
@@ -22,18 +29,21 @@ class EmptySource extends SourcePluginBase {
    * {@inheritdoc}
    */
   public function fields() {
-    return array(
+    return [
       'id' => t('ID'),
-    );
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public function initializeIterator() {
-    return new \ArrayIterator(array(array('id' => '')));
+    return new \ArrayIterator([['id' => '']]);
   }
 
+  /**
+   * Allows class to decide how it will react when it is treated like a string.
+   */
   public function __toString() {
     return '';
   }
@@ -49,7 +59,7 @@ class EmptySource extends SourcePluginBase {
   /**
    * {@inheritdoc}
    */
-  public function count() {
+  public function count($refresh = FALSE) {
     return 1;
   }
 

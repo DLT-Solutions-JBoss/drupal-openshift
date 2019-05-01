@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Core\Render\Element\TableSelectTest.
- */
-
 namespace Drupal\Tests\Core\Render\Element;
 
 use Drupal\Core\Form\FormState;
@@ -35,7 +30,7 @@ class TableSelectTest extends UnitTestCase {
     $element['#value'] = 0;
 
     $element['#options'][] = [
-      'title' => new Link('my-text', Url::fromRoute('<front>'))
+      'title' => new Link('my-text', Url::fromRoute('<front>')),
     ];
 
     $element['#attributes'] = [];

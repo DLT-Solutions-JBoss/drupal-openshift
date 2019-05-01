@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Render\Element\MachineName.
- */
-
 namespace Drupal\Core\Render\Element;
 
 use Drupal\Component\Utility\NestedArray;
@@ -27,10 +22,14 @@ use Drupal\Core\Language\LanguageInterface;
  * Properties:
  * - #machine_name: An associative array containing:
  *   - exists: A callable to invoke for checking whether a submitted machine
- *     name value already exists. The submitted value is passed as an argument.
+ *     name value already exists. The arguments passed to the callback will be:
+ *     - The submitted value.
+ *     - The element array.
+ *     - The form state object.
  *     In most cases, an existing API or menu argument loader function can be
  *     re-used. The callback is only invoked if the submitted value differs from
- *     the element's #default_value.
+ *     the element's initial #default_value. The initial #default_value is
+ *     stored in form state so AJAX forms can be reliably validated.
  *   - source: (optional) The #array_parents of the form element containing the
  *     human-readable name (i.e., as contained in the $form structure) to use as
  *     source for the machine name. Defaults to array('label').
@@ -77,27 +76,27 @@ class MachineName extends Textfield {
    */
   public function getInfo() {
     $class = get_class($this);
-    return array(
+    return [
       '#input' => TRUE,
       '#default_value' => NULL,
       '#required' => TRUE,
       '#maxlength' => 64,
       '#size' => 60,
       '#autocomplete_route_name' => FALSE,
-      '#process' => array(
-        array($class, 'processMachineName'),
-        array($class, 'processAutocomplete'),
-        array($class, 'processAjaxForm'),
-      ),
-      '#element_validate' => array(
-        array($class, 'validateMachineName'),
-      ),
-      '#pre_render' => array(
-        array($class, 'preRenderTextfield'),
-      ),
+      '#process' => [
+        [$class, 'processMachineName'],
+        [$class, 'processAutocomplete'],
+        [$class, 'processAjaxForm'],
+      ],
+      '#element_validate' => [
+        [$class, 'validateMachineName'],
+      ],
+      '#pre_render' => [
+        [$class, 'preRenderTextfield'],
+      ],
       '#theme' => 'input__textfield',
-      '#theme_wrappers' => array('form_element'),
-    );
+      '#theme_wrappers' => ['form_element'],
+    ];
   }
 
   /**
@@ -130,19 +129,19 @@ class MachineName extends Textfield {
     $language = \Drupal::languageManager()->getCurrentLanguage();
 
     // Apply default form element properties.
-    $element += array(
+    $element += [
       '#title' => t('Machine-readable name'),
       '#description' => t('A unique machine-readable name. Can only contain lowercase letters, numbers, and underscores.'),
-      '#machine_name' => array(),
+      '#machine_name' => [],
       '#field_prefix' => '',
       '#field_suffix' => '',
       '#suffix' => '',
-    );
+    ];
     // A form element that only wants to set one #machine_name property (usually
     // 'source' only) would leave all other properties undefined, if the defaults
     // were defined by an element plugin. Therefore, we apply the defaults here.
-    $element['#machine_name'] += array(
-      'source' => array('label'),
+    $element['#machine_name'] += [
+      'source' => ['label'],
       'target' => '#' . $element['#id'],
       'label' => t('Machine name'),
       'replace_pattern' => '[^a-z0-9_]+',
@@ -150,14 +149,25 @@ class MachineName extends Textfield {
       'standalone' => FALSE,
       'field_prefix' => $element['#field_prefix'],
       'field_suffix' => $element['#field_suffix'],
-    );
+    ];
+
+    // Store the initial value in form state. The machine name needs this to
+    // ensure that the exists function is not called for existing values when
+    // editing them.
+    $initial_values = $form_state->get('machine_name.initial_values') ?: [];
+    // Store the initial values in an array so we can differentiate between a
+    // NULL default value and a new machine name element.
+    if (!array_key_exists($element['#name'], $initial_values)) {
+      $initial_values[$element['#name']] = $element['#default_value'];
+      $form_state->set('machine_name.initial_values', $initial_values);
+    }
 
     // By default, machine names are restricted to Latin alphanumeric characters.
     // So, default to LTR directionality.
     if (!isset($element['#attributes'])) {
-      $element['#attributes'] = array();
+      $element['#attributes'] = [];
     }
-    $element['#attributes'] += array('dir' => LanguageInterface::DIRECTION_LTR);
+    $element['#attributes'] += ['dir' => LanguageInterface::DIRECTION_LTR];
 
     // The source element defaults to array('name'), but may have been overridden.
     if (empty($element['#machine_name']['source'])) {
@@ -182,15 +192,31 @@ class MachineName extends Textfield {
     else {
       // Append a field suffix to the source form element, which will contain
       // the live preview of the machine name.
-      $source += array('#field_suffix' => '');
+      $source += ['#field_suffix' => ''];
       $source['#field_suffix'] = $source['#field_suffix'] . ' <small id="' . $suffix_id . '">&nbsp;</small>';
 
-      $parents = array_merge($element['#machine_name']['source'], array('#field_suffix'));
+      $parents = array_merge($element['#machine_name']['source'], ['#field_suffix']);
       NestedArray::setValue($form_state->getCompleteForm(), $parents, $source['#field_suffix']);
     }
 
     $element['#attached']['library'][] = 'core/drupal.machine-name';
-    $element['#attached']['drupalSettings']['machineName']['#' . $source['#id']] = $element['#machine_name'];
+    $options = [
+      'replace_pattern',
+      'replace_token',
+      'replace',
+      'maxlength',
+      'target',
+      'label',
+      'field_prefix',
+      'field_suffix',
+      'suffix',
+    ];
+
+    /** @var \Drupal\Core\Access\CsrfTokenGenerator $token_generator */
+    $token_generator = \Drupal::service('csrf_token');
+    $element['#machine_name']['replace_token'] = $token_generator->get($element['#machine_name']['replace_pattern']);
+
+    $element['#attached']['drupalSettings']['machineName']['#' . $source['#id']] = array_intersect_key($element['#machine_name'], array_flip($options));
     $element['#attached']['drupalSettings']['langcode'] = $language->getId();
 
     return $element;
@@ -232,8 +258,11 @@ class MachineName extends Textfield {
       }
     }
 
-    // Verify that the machine name is unique.
-    if ($element['#default_value'] !== $element['#value']) {
+    // Verify that the machine name is unique. If the value matches the initial
+    // default value then it does not need to be validated as the machine name
+    // element assumes the form is editing the existing value.
+    $initial_values = $form_state->get('machine_name.initial_values') ?: [];
+    if (!array_key_exists($element['#name'], $initial_values) || $initial_values[$element['#name']] !== $element['#value']) {
       $function = $element['#machine_name']['exists'];
       if (call_user_func($function, $element['#value'], $element, $form_state)) {
         $form_state->setError($element, t('The machine-readable name is already in use. It must be unique.'));

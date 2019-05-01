@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\editor\EditorController.
- */
-
 namespace Drupal\editor;
 
 use Drupal\Core\Ajax\AjaxResponse;
@@ -28,7 +23,7 @@ class EditorController extends ControllerBase {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity of which a formatted text field is being rerendered.
    * @param string $field_name
-   *   The name of the (formatted text) field that that is being rerendered
+   *   The name of the (formatted text) field that is being rerendered
    * @param string $langcode
    *   The name of the language for which the formatted text field is being
    *   rerendered.
@@ -43,7 +38,7 @@ class EditorController extends ControllerBase {
 
     // Direct text editing is only supported for single-valued fields.
     $field = $entity->getTranslation($langcode)->$field_name;
-    $editable_text = check_markup($field->value, $field->format, $langcode, array(FilterInterface::TYPE_TRANSFORM_REVERSIBLE, FilterInterface::TYPE_TRANSFORM_IRREVERSIBLE));
+    $editable_text = check_markup($field->value, $field->format, $langcode, [FilterInterface::TYPE_TRANSFORM_REVERSIBLE, FilterInterface::TYPE_TRANSFORM_IRREVERSIBLE]);
     $response->addCommand(new GetUntransformedTextCommand($editable_text));
 
     return $response;

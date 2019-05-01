@@ -1,13 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Component\HttpFoundation\SecuredRedirectResponse.
- */
-
 namespace Drupal\Component\HttpFoundation;
 
-use \Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Provides a common base class for safe redirects.
@@ -41,7 +36,7 @@ abstract class SecuredRedirectResponse extends RedirectResponse {
    * Copies over the values from the given response.
    *
    * @param \Symfony\Component\HttpFoundation\RedirectResponse $response
-   *   The redirect reponse object.
+   *   The redirect response object.
    */
   protected function fromResponse(RedirectResponse $response) {
     $this->setProtocolVersion($response->getProtocolVersion());

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Config\Entity\ThirdPartySettingsInterface.
- */
-
 namespace Drupal\Core\Config\Entity;
 
 /**
@@ -45,7 +40,6 @@ interface ThirdPartySettingsInterface {
    *   The value.
    */
   public function getThirdPartySetting($module, $key, $default = NULL);
-
 
   /**
    * Gets all third-party settings of a given module.

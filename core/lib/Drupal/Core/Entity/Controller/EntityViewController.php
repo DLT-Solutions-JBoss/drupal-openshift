@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Entity\Controller\EntityViewController.
- */
-
 namespace Drupal\Core\Entity\Controller;
 
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
@@ -93,7 +88,8 @@ class EntityViewController implements ContainerInjectionInterface {
    *   Defaults to 'full'.
    *
    * @return array
-   *   A render array as expected by drupal_render().
+   *   A render array as expected by
+   *   \Drupal\Core\Render\RendererInterface::render().
    */
   public function view(EntityInterface $_entity, $view_mode = 'full') {
     $page = $this->entityManager
@@ -104,8 +100,25 @@ class EntityViewController implements ContainerInjectionInterface {
     $page['#entity_type'] = $_entity->getEntityTypeId();
     $page['#' . $page['#entity_type']] = $_entity;
 
-
     return $page;
+  }
+
+  /**
+   * Provides a page to render a single entity revision.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $_entity_revision
+   *   The Entity to be rendered. Note this variable is named $_entity_revision
+   *   rather than $entity to prevent collisions with other named placeholders
+   *   in the route.
+   * @param string $view_mode
+   *   (optional) The view mode that should be used to display the entity.
+   *   Defaults to 'full'.
+   *
+   * @return array
+   *   A render array.
+   */
+  public function viewRevision(EntityInterface $_entity_revision, $view_mode = 'full') {
+    return $this->view($_entity_revision, $view_mode);
   }
 
 }

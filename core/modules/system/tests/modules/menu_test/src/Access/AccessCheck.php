@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\menu_test\Access\AccessCheck.
- */
 
 namespace Drupal\menu_test\Access;
 
@@ -28,6 +24,20 @@ class AccessCheck implements AccessInterface {
       $result = AccessResult::allowedIf($_SESSION['menu_test'] < 2);
     }
     return $result->setCacheMaxAge(0);
+  }
+
+  /**
+   * @return \Drupal\Core\Access\AccessResultForbidden
+   */
+  public function menuLocalAction7() {
+    return AccessResult::forbidden()->addCacheTags(['menu_local_action7'])->addCacheContexts(['url.query_args:menu_local_action7']);
+  }
+
+  /**
+   * @return \Drupal\Core\Access\AccessResultAllowed
+   */
+  public function menuLocalAction8() {
+    return AccessResult::allowed()->addCacheTags(['menu_local_action8'])->addCacheContexts(['url.query_args:menu_local_action8']);
   }
 
 }

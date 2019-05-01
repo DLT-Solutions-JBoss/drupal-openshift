@@ -1,16 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Extension\InfoParserInterface.
- */
-
 namespace Drupal\Core\Extension;
 
 /**
  * Interface for classes that parses Drupal's info.yml files.
  */
-interface InfoParserInterface  {
+interface InfoParserInterface {
 
   /**
    * Parses Drupal module, theme and profile .info.yml files.
@@ -52,6 +47,9 @@ interface InfoParserInterface  {
    *
    * See bartik.info.yml for an example of a theme .info.yml file.
    *
+   * For information stored in a profile .info.yml file see
+   * install_profile_info().
+   *
    * @param string $filename
    *   The file we are parsing. Accepts file with relative or absolute path.
    *
@@ -61,8 +59,9 @@ interface InfoParserInterface  {
    * @throws \Drupal\Core\Extension\InfoParserException
    *   Exception thrown if there is a parsing error or the .info.yml file does
    *   not contain a required key.
+   *
+   * @see install_profile_info()
    */
   public function parse($filename);
 
 }
-

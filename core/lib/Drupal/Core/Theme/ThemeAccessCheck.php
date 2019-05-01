@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Theme\ThemeAccessCheck.
- */
-
 namespace Drupal\Core\Theme;
 
 use Drupal\Core\Access\AccessResult;
@@ -32,6 +27,7 @@ class ThemeAccessCheck implements AccessInterface {
   public function __construct(ThemeHandlerInterface $theme_handler) {
     $this->themeHandler = $theme_handler;
   }
+
   /**
    * Checks access to the theme for routing.
    *

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Config\Entity\ConfigEntityBase.
- */
-
 namespace Drupal\Core\Config\Entity;
 
 use Drupal\Component\Utility\NestedArray;
@@ -38,16 +33,6 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    * @var string
    */
   protected $originalId;
-
-  /**
-   * The name of the property that is used to store plugin configuration.
-   *
-   * This is needed when the entity uses a LazyPluginCollection, to dictate
-   * where the plugin configuration should be stored.
-   *
-   * @var string
-   */
-  protected $pluginConfigKey;
 
   /**
    * The enabled/disabled status of the configuration entity.
@@ -101,7 +86,18 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    *
    * @var array
    */
-  protected $third_party_settings = array();
+  protected $third_party_settings = [];
+
+  /**
+   * Information maintained by Drupal core about configuration.
+   *
+   * Keys:
+   * - default_config_hash: A hash calculated by the config.installer service
+   *   and added during installation.
+   *
+   * @var array
+   */
+  protected $_core = [];
 
   /**
    * Trust supplied data and not use configuration schema on save.
@@ -267,22 +263,17 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    * {@inheritdoc}
    */
   public function toArray() {
-    $properties = array();
+    $properties = [];
     /** @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface $entity_type */
     $entity_type = $this->getEntityType();
 
-    $properties_to_export = $entity_type->getPropertiesToExport();
-    if (empty($properties_to_export)) {
-      $config_name = $entity_type->getConfigPrefix() . '.' . $this->id();
-      $definition = $this->getTypedConfig()->getDefinition($config_name);
-      if (!isset($definition['mapping'])) {
-        throw new SchemaIncompleteException("Incomplete or missing schema for $config_name");
-      }
-      $properties_to_export = array_combine(array_keys($definition['mapping']), array_keys($definition['mapping']));
-    }
-
     $id_key = $entity_type->getKey('id');
-    foreach ($properties_to_export as $property_name => $export_name) {
+    $property_names = $entity_type->getPropertiesToExport($this->id());
+    if (empty($property_names)) {
+      $config_name = $entity_type->getConfigPrefix() . '.' . $this->id();
+      throw new SchemaIncompleteException("Incomplete or missing schema for $config_name");
+    }
+    foreach ($property_names as $property_name => $export_name) {
       // Special handling for IDs so that computed compound IDs work.
       // @see \Drupal\Core\Entity\EntityDisplayBase::id()
       if ($property_name == $id_key) {
@@ -295,6 +286,9 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
 
     if (empty($this->third_party_settings)) {
       unset($properties['third_party_settings']);
+    }
+    if (empty($this->_core)) {
+      unset($properties['_core']);
     }
     return $properties;
   }
@@ -351,6 +345,35 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
   /**
    * {@inheritdoc}
    */
+  public function __sleep() {
+    $keys_to_unset = [];
+    if ($this instanceof EntityWithPluginCollectionInterface) {
+      // Get the plugin collections first, so that the properties are
+      // initialized in $vars and can be found later.
+      $plugin_collections = $this->getPluginCollections();
+      $vars = get_object_vars($this);
+      foreach ($plugin_collections as $plugin_config_key => $plugin_collection) {
+        // Save any changes to the plugin configuration to the entity.
+        $this->set($plugin_config_key, $plugin_collection->getConfiguration());
+        // If the plugin collections are stored as properties on the entity,
+        // mark them to be unset.
+        $keys_to_unset += array_filter($vars, function ($value) use ($plugin_collection) {
+          return $plugin_collection === $value;
+        });
+      }
+    }
+
+    $vars = parent::__sleep();
+
+    if (!empty($keys_to_unset)) {
+      $vars = array_diff($vars, array_keys($keys_to_unset));
+    }
+    return $vars;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function calculateDependencies() {
     // All dependencies should be recalculated on every save apart from enforced
     // dependencies. This ensures stale dependencies are never saved.
@@ -386,7 +409,7 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
   /**
    * {@inheritdoc}
    */
-  public function url($rel = 'edit-form', $options = array()) {
+  public function url($rel = 'edit-form', $options = []) {
     // Do not remove this override: the default value of $rel is different.
     return parent::url($rel, $options);
   }
@@ -526,7 +549,7 @@ abstract class ConfigEntityBase extends Entity implements ConfigEntityInterface 
    * {@inheritdoc}
    */
   public function getThirdPartySettings($module) {
-    return isset($this->third_party_settings[$module]) ? $this->third_party_settings[$module] : array();
+    return isset($this->third_party_settings[$module]) ? $this->third_party_settings[$module] : [];
   }
 
   /**

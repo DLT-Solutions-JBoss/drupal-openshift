@@ -1,17 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Component\Diff\Engine\HWLDFWordAccumulator.
- */
-
 namespace Drupal\Component\Diff\Engine;
 
-use Drupal\Component\Utility\Unicode;
-
 /**
- *  Additions by Axel Boldt follow, partly taken from diff.php, phpwiki-1.3.3
- *
+ * Additions by Axel Boldt follow, partly taken from diff.php, phpwiki-1.3.3
  */
 
 /**
@@ -26,7 +18,7 @@ class HWLDFWordAccumulator {
    */
   const NBSP = '&#160;';
 
-  protected $lines = array();
+  protected $lines = [];
 
   protected $line = '';
 
@@ -70,7 +62,7 @@ class HWLDFWordAccumulator {
       }
       if ($word[0] == "\n") {
         $this->_flushLine($tag);
-        $word = Unicode::substr($word, 1);
+        $word = mb_substr($word, 1);
       }
       assert(!strstr($word, "\n"));
       $this->group .= $word;
@@ -81,4 +73,5 @@ class HWLDFWordAccumulator {
     $this->_flushLine('~done');
     return $this->lines;
   }
+
 }

@@ -1,12 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\datetime\Plugin\views\sort\Date.
- */
-
 namespace Drupal\datetime\Plugin\views\sort;
 
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItem;
+use Drupal\views\FieldAPIHandlerTrait;
 use Drupal\views\Plugin\views\sort\Date as NumericDate;
 
 /**
@@ -19,28 +16,38 @@ use Drupal\views\Plugin\views\sort\Date as NumericDate;
  */
 class Date extends NumericDate {
 
+  use FieldAPIHandlerTrait;
+
   /**
-   * Override to account for dates stored as strings.
+   * Determines if the timezone offset is calculated.
+   *
+   * @var bool
    */
-  public function getDateField() {
-    // Return the real field, since it is already in string format.
-    return "$this->tableAlias.$this->realField";
+  protected $calculateOffset = TRUE;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+
+    $definition = $this->getFieldStorageDefinition();
+    if ($definition->getSetting('datetime_type') === DateTimeItem::DATETIME_TYPE_DATE) {
+      // Timezone offset calculation is not applicable to dates that are stored
+      // as date-only.
+      $this->calculateOffset = FALSE;
+    }
   }
 
   /**
-   * Override query to provide 'second' granularity.
+   * {@inheritdoc}
+   *
+   * Override to account for dates stored as strings.
    */
-  public function query() {
-    $this->ensureMyTable();
-    switch ($this->options['granularity']) {
-      case 'second':
-        $formula = $this->getDateFormat('YmdHis');
-        $this->query->addOrderBy(NULL, $formula, $this->options['order'], $this->tableAlias . '_' . $this->field . '_' . $this->options['granularity']);
-        return;
-    }
-
-    // All other granularities are handled by the numeric sort handler.
-    parent::query();
+  public function getDateField() {
+    // Use string date storage/formatting since datetime fields are stored as
+    // strings rather than UNIX timestamps.
+    return $this->query->getDateField("$this->tableAlias.$this->realField", TRUE, $this->calculateOffset);
   }
 
   /**
@@ -51,6 +58,5 @@ class Date extends NumericDate {
   public function getDateFormat($format) {
     return $this->query->getDateFormat($this->getDateField(), $format, TRUE);
   }
-
 
 }

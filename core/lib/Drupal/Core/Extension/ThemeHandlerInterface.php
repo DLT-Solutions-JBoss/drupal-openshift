@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Extension\ThemeHandlerInterface.
- */
-
 namespace Drupal\Core\Extension;
 
 /**
@@ -26,7 +21,7 @@ interface ThemeHandlerInterface {
    *   Whether any of the given themes have been installed.
    *
    * @throws \Drupal\Core\Extension\ExtensionNameLengthException
-   *   Thrown when the theme name is to long
+   *   Thrown when the theme name is to long.
    *
    * @deprecated in Drupal 8.0.x-dev and will be removed before Drupal 9.0.0.
    *   Use the theme_installer service instead.
@@ -44,8 +39,8 @@ interface ThemeHandlerInterface {
    * @param array $theme_list
    *   The themes to uninstall.
    *
-   * @throws \InvalidArgumentException
-   *   Thrown when you uninstall an not installed theme.
+   * @throws \Drupal\Core\Extension\Exception\UninstalledExtensionException
+   *   Thrown when you try to uninstall a theme that wasn't installed.
    *
    * @see hook_themes_uninstalled()
    *
@@ -96,7 +91,6 @@ interface ThemeHandlerInterface {
    *     the system that declare this theme as their base theme.
    */
   public function listInfo();
-
 
   /**
    * Adds a theme extension to the internal listing.
@@ -152,6 +146,9 @@ interface ThemeHandlerInterface {
    *
    * @return string
    *   Returns the human readable name of the theme.
+   *
+   * @throws \Drupal\Core\Extension\Exception\UnknownExtensionException
+   *   When the specified theme does not exist.
    */
   public function getName($theme);
 
@@ -170,6 +167,15 @@ interface ThemeHandlerInterface {
    *   The new default theme.
    *
    * @return $this
+   *
+   * @deprecated in Drupal 8.2.x-dev and will be removed before Drupal 9.0.0.
+   *   Use
+   *   @code
+   *     \Drupal::configFactory()
+   *       ->getEditable('system.theme')
+   *       ->set('default', $theme)
+   *       ->save();
+   *   @endcode
    */
   public function setDefault($theme);
 
@@ -203,7 +209,7 @@ interface ThemeHandlerInterface {
    * @return \Drupal\Core\Extension\Extension
    *   An extension object.
    *
-   * @throws \InvalidArgumentException
+   * @throws \Drupal\Core\Extension\Extension\UnknownExtensionException
    *   Thrown when the requested theme does not exist.
    */
   public function getTheme($name);

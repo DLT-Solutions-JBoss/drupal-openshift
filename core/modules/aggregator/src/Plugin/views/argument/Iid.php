@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\aggregator\Plugin\views\argument\Iid.
- */
-
 namespace Drupal\aggregator\Plugin\views\argument;
 
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -28,7 +23,7 @@ class Iid extends NumericArgument {
   protected $entityManager;
 
   /**
-   * Constructs a Drupal\Component\Plugin\PluginBase object.
+   * Constructs a \Drupal\aggregator\Plugin\views\argument\Iid object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -55,7 +50,7 @@ class Iid extends NumericArgument {
    * {@inheritdoc}
    */
   public function titleQuery() {
-    $titles = array();
+    $titles = [];
 
     $items = $this->entityManager->getStorage('aggregator_item')->loadMultiple($this->value);
     foreach ($items as $feed) {

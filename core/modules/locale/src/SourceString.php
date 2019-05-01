@@ -1,13 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\locale\SourceString.
- */
-
 namespace Drupal\locale;
-
-use Drupal\locale\LocaleString;
 
 /**
  * Defines the locale source string object.
@@ -17,6 +10,7 @@ use Drupal\locale\LocaleString;
  * value, and is assumed to be in English language.
  */
 class SourceString extends StringBase {
+
   /**
    * {@inheritdoc}
    */

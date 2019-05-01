@@ -31,22 +31,22 @@
  * 8 themes.
  *
  * For further information on theming in Drupal 8 see
- * https://www.drupal.org/theme-guide/8
+ * https://www.drupal.org/docs/8/theming
  *
  * For further Twig documentation see
  * http://twig.sensiolabs.org/doc/templates.html
  *
  * @section sec_theme_hooks Theme Hooks
- * The theme system is invoked in drupal_render() by calling the internal
- * _theme() function, which operates on the concept of "theme hooks". Theme
- * hooks define how a particular type of data should be rendered. They are
- * registered by modules by implementing hook_theme(), which specifies the name
- * of the hook, the input "variables" used to provide data and options, and
- * other information. Modules implementing hook_theme() also need to provide a
- * default implementation for each of their theme hooks, normally in a Twig
- * file, and they may also provide preprocessing functions. For example, the
- * core Search module defines a theme hook for a search result item in
- * search_theme():
+ * The theme system is invoked in \Drupal\Core\Render\Renderer::doRender() by
+ * calling the \Drupal\Core\Theme\ThemeManagerInterface::render() function,
+ * which operates on the concept of "theme hooks". Theme hooks define how a
+ * particular type of data should be rendered. They are registered by modules by
+ * implementing hook_theme(), which specifies the name of the hook, the input
+ * "variables" used to provide data and options, and other information. Modules
+ * implementing hook_theme() also need to provide a default implementation for
+ * each of their theme hooks, normally in a Twig file, and they may also provide
+ * preprocessing functions. For example, the core Search module defines a theme
+ * hook for a search result item in search_theme():
  * @code
  * return array(
  *   'search_result' => array(
@@ -68,12 +68,12 @@
  * receives are documented in the header of the default Twig template file.
  *
  * hook_theme() implementations can also specify that a theme hook
- * implementation is a theme function, but that is uncommon. It is only used for
- * special cases, for performance reasons, because rendering using theme
- * functions is somewhat faster than theme templates. Note that while Twig
- * templates will auto-escape variables, theme functions must explicitly escape
- * any variables by using theme_render_and_autoescape(). Failure to do so is
- * likely to result in security vulnerabilities.
+ * implementation is a theme function, but that is uncommon and not recommended.
+ * Note that while Twig templates will auto-escape variables, theme functions
+ * must explicitly escape any variables by using theme_render_and_autoescape().
+ * Failure to do so is likely to result in security vulnerabilities. Theme
+ * functions are deprecated in Drupal 8.0.x and will be removed before
+ * Drupal 9.0.x. Use Twig templates instead.
  *
  * @section sec_overriding_theme_hooks Overriding Theme Hooks
  * Themes may register new theme hooks within a hook_theme() implementation, but
@@ -98,7 +98,8 @@
  * default function is again a good starting point for overriding its behavior.
  * Again, note that theme functions (unlike templates) must explicitly escape
  * variables using theme_render_and_autoescape() or risk security
- * vulnerabilities.
+ * vulnerabilities. Theme functions are deprecated in Drupal 8.0.x and will be
+ * removed before Drupal 9.0.x. Use Twig templates instead.
  *
  * @section sec_preprocess_templates Preprocessing for Template Files
  * If the theme implementation is a template file, several functions are called
@@ -222,14 +223,9 @@
  * same, which gives users fewer user interface patterns to learn.
  *
  * For further information on the Theme and Render APIs, see:
- * - https://www.drupal.org/documentation/theme
+ * - https://www.drupal.org/docs/8/theming
  * - https://www.drupal.org/developing/api/8/render
- * - https://www.drupal.org/node/722174
- * - https://www.drupal.org/node/933976
- * - https://www.drupal.org/node/930760
- *
- * @todo Check these links. Some are for Drupal 7, and might need updates for
- *   Drupal 8.
+ * - @link themeable Theme system overview @endlink.
  *
  * @section arrays Render arrays
  * The core structure of the Render API is the render array, which is a
@@ -253,13 +249,13 @@
  * form array, which specifies the form elements for an HTML form; see the
  * @link form_api Form generation topic @endlink for more information on forms.
  *
- * Render arrays (at each level in the hierarchy) will usually have one of the
- * following three properties defined:
+ * Render arrays (at any level of the hierarchy) will usually have one of the
+ * following properties defined:
  * - #type: Specifies that the array contains data and options for a particular
- *   type of "render element" (examples: 'form', for an HTML form; 'textfield',
- *   'submit', and other HTML form element types; 'table', for a table with
- *   rows, columns, and headers). See @ref elements below for more on render
- *   element types.
+ *   type of "render element" (for example, 'form', for an HTML form;
+ *   'textfield', 'submit', for HTML form element types; 'table', for a table
+ *   with rows, columns, and headers). See @ref elements below for more on
+ *   render element types.
  * - #theme: Specifies that the array contains data to be themed by a particular
  *   theme hook. Modules define theme hooks by implementing hook_theme(), which
  *   specifies the input "variables" used to provide data and options; if a
@@ -276,30 +272,29 @@
  *   can customize the markup. Note that the value is passed through
  *   \Drupal\Component\Utility\Xss::filterAdmin(), which strips known XSS
  *   vectors while allowing a permissive list of HTML tags that are not XSS
- *   vectors. (I.e, <script> and <style> are not allowed.) See
- *   \Drupal\Component\Utility\Xss::$adminTags for the list of tags that will
- *   be allowed. If your markup needs any of the tags that are not in this
- *   whitelist, then you can implement a theme hook and template file and/or
- *   an asset library. Aternatively, you can use the render array key
- *   #allowed_tags to alter which tags are filtered.
+ *   vectors. (For example, <script> and <style> are not allowed.) See
+ *   \Drupal\Component\Utility\Xss::$adminTags for the list of allowed tags. If
+ *   your markup needs any of the tags not in this whitelist, then you can
+ *   implement a theme hook and/or an asset library. Alternatively, you can use
+ *   the key #allowed_tags to alter which tags are filtered.
  * - #plain_text: Specifies that the array provides text that needs to be
- *   escaped. This value takes precedence over #markup if present.
- * - #allowed_tags: If #markup is supplied this can be used to change which tags
- *   are using to filter the markup. The value should be an array of tags that
- *   Xss::filter() would accept. If #plain_text is set this value is ignored.
+ *   escaped. This value takes precedence over #markup.
+ * - #allowed_tags: If #markup is supplied, this can be used to change which
+ *   tags are allowed in the markup. The value is an array of tags that
+ *   Xss::filter() would accept. If #plain_text is set, this value is ignored.
  *
  *   Usage example:
  *   @code
- *   $output['admin_filtered_string'] = array(
+ *   $output['admin_filtered_string'] = [
  *     '#markup' => '<em>This is filtered using the admin tag list</em>',
- *   );
- *   $output['filtered_string'] = array(
- *     '#markup' => '<em>This is filtered</em>',
- *     '#allowed_tags' => ['strong'],
- *   );
- *   $output['escaped_string'] = array(
+ *   ];
+ *   $output['filtered_string'] = [
+ *     '#markup' => '<video><source src="v.webm" type="video/webm"></video>',
+ *     '#allowed_tags' => ['video', 'source'],
+ *   ];
+ *   $output['escaped_string'] = [
  *     '#plain_text' => '<em>This is escaped</em>',
- *   );
+ *   ];
  *   @endcode
  *
  *   @see core.libraries.yml
@@ -323,8 +318,11 @@
  *   namespace Element, and generally extend the
  *   \Drupal\Core\Render\Element\FormElement base class.
  * See the @link plugin_api Plugin API topic @endlink for general information
- * on plugins, and look for classes with the RenderElement or FormElement
- * annotation to discover what render elements are available.
+ * on plugins. You can search for classes with the RenderElement or FormElement
+ * annotation to discover what render elements are available. API reference
+ * sites (such as https://api.drupal.org) generate lists of all existing
+ * elements from these classes. Look for the Elements link in the API Navigation
+ * block.
  *
  * Modules can define render elements by defining an element plugin.
  *
@@ -365,8 +363,8 @@
  * @code
  *   '#cache' => [
  *     'keys' => ['entity_view', 'node', $node->id()],
- *     'contexts' => ['language'],
- *     'tags' => ['node:' . $node->id()],
+ *     'contexts' => ['languages'],
+ *     'tags' => $node->getCacheTags(),
  *     'max-age' => Cache::PERMANENT,
  *   ],
  * @endcode
@@ -428,9 +426,10 @@
  *
  * @section render_pipeline The render pipeline
  * The term "render pipeline" refers to the process Drupal uses to take
- * information provided by modules and render it into a response. For more
- * details on this process, see https://www.drupal.org/developing/api/8/render;
- * for background on routing concepts, see @ref sec_controller.
+ * information provided by modules and render it into a response. See
+ * https://www.drupal.org/developing/api/8/render for more details on this
+ * process. For background on routing concepts, see
+ * @link routing Routing API. @endlink
  *
  * There are in fact multiple render pipelines:
  * - Drupal always uses the Symfony render pipeline. See
@@ -472,6 +471,36 @@
  */
 
 /**
+ * @defgroup listing_page_element Page header for Elements page
+ * @{
+ * Introduction to form and render elements
+ *
+ * Render elements are referenced in render arrays. Render arrays contain data
+ * to be rendered, along with meta-data and attributes that specify how to
+ * render the data into markup; see the
+ * @link theme_render Render API topic @endlink for an overview of render
+ * arrays and render elements. Form arrays are a subset of render arrays,
+ * representing HTML forms; form elements are a subset of render elements,
+ * representing HTML elements for forms. See the
+ * @link form_api Form API topic @endlink for an overview of forms, form
+ * processing, and form arrays.
+ *
+ * Each form and render element type corresponds to an element plugin class;
+ * each of them either extends \Drupal\Core\Render\Element\RenderElement
+ * (render elements) or \Drupal\Core\Render\Element\FormElement (form
+ * elements). Usage and properties are documented on the individual classes,
+ * and the two base classes list common properties shared by all render
+ * elements and the form element subset, respectively.
+ *
+ * @see theme_render
+ * @see form_api
+ * @see \Drupal\Core\Render\Element\RenderElement
+ * @see \Drupal\Core\Render\Element\FormElement
+ *
+ * @}
+ */
+
+/**
  * @addtogroup hooks
  * @{
  */
@@ -494,12 +523,12 @@
  */
 function hook_form_system_theme_settings_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
   // Add a checkbox to toggle the breadcrumb trail.
-  $form['toggle_breadcrumb'] = array(
+  $form['toggle_breadcrumb'] = [
     '#type' => 'checkbox',
     '#title' => t('Display the breadcrumb'),
     '#default_value' => theme_get_setting('features.breadcrumb'),
     '#description'   => t('Show a trail of links from the homepage to the current page.'),
-  );
+  ];
 }
 
 /**
@@ -511,7 +540,8 @@ function hook_form_system_theme_settings_alter(&$form, \Drupal\Core\Form\FormSta
  * preprocess variables for a specific theme hook, whether implemented as a
  * template or function.
  *
- * For more detailed information, see _theme().
+ * For more detailed information, see the
+ * @link themeable Theme system overview topic @endlink.
  *
  * @param $variables
  *   The variables array (modify in place).
@@ -519,7 +549,7 @@ function hook_form_system_theme_settings_alter(&$form, \Drupal\Core\Form\FormSta
  *   The name of the theme hook.
  */
 function hook_preprocess(&$variables, $hook) {
- static $hooks;
+  static $hooks;
 
   // Add contextual links to the variables, if the user has permission.
 
@@ -559,7 +589,8 @@ function hook_preprocess(&$variables, $hook) {
  * hook. It should only be used if a module needs to override or add to the
  * theme preprocessing for a theme hook it didn't define.
  *
- * For more detailed information, see _theme().
+ * For more detailed information, see the
+ * @link themeable Theme system overview topic @endlink.
  *
  * @param $variables
  *   The variables array (modify in place).
@@ -567,7 +598,7 @@ function hook_preprocess(&$variables, $hook) {
 function hook_preprocess_HOOK(&$variables) {
   // This example is from rdf_preprocess_image(). It adds an RDF attribute
   // to the image hook's variables.
-  $variables['attributes']['typeof'] = array('foaf:Image');
+  $variables['attributes']['typeof'] = ['foaf:Image'];
 }
 
 /**
@@ -582,6 +613,10 @@ function hook_preprocess_HOOK(&$variables) {
  * hook called (in this case 'node__article') is available in
  * $variables['theme_hook_original'].
  *
+ * Implementations of this hook must be placed in *.module or *.theme files, or
+ * must otherwise make sure that the hook implementation is available at
+ * any given time.
+ *
  * @todo Add @code sample.
  *
  * @param array $variables
@@ -594,9 +629,9 @@ function hook_preprocess_HOOK(&$variables) {
  * @see hook_theme_suggestions_HOOK_alter()
  */
 function hook_theme_suggestions_HOOK(array $variables) {
-  $suggestions = array();
+  $suggestions = [];
 
-  $suggestions[] = 'node__' . $variables['elements']['#langcode'];
+  $suggestions[] = 'hookname__' . $variables['elements']['#langcode'];
 
   return $suggestions;
 }
@@ -663,6 +698,10 @@ function hook_theme_suggestions_alter(array &$suggestions, array $variables, $ho
  * hook called (in this case 'node__article') is available in
  * $variables['theme_hook_original'].
  *
+ * Implementations of this hook must be placed in *.module or *.theme files, or
+ * must otherwise make sure that the hook implementation is available at
+ * any given time.
+ *
  * @todo Add @code sample.
  *
  * @param array $suggestions
@@ -697,7 +736,7 @@ function hook_themes_installed($theme_list) {
 /**
  * Respond to themes being uninstalled.
  *
- * @param array $theme_list
+ * @param array $themes
  *   Array containing the names of the themes being uninstalled.
  *
  * @see \Drupal\Core\Extension\ThemeHandler::uninstall()
@@ -726,6 +765,12 @@ function hook_extension() {
 /**
  * Render a template using the theme engine.
  *
+ * It is the theme engine's responsibility to escape variables. The only
+ * exception is if a variable implements
+ * \Drupal\Component\Render\MarkupInterface. Drupal is inherently unsafe if
+ * other variables are not escaped. The helper function
+ * theme_render_and_autoescape() may be used for this.
+ *
  * @param string $template_file
  *   The path (relative to the Drupal root directory) to the template to be
  *   rendered including its extension in the format 'path/to/TEMPLATE_NAME.EXT'.
@@ -751,17 +796,17 @@ function hook_render_template($template_file, $variables) {
  * A module may implement this hook in order to alter the element type defaults
  * defined by a module.
  *
- * @param array $types
+ * @param array $info
  *   An associative array with structure identical to that of the return value
  *   of \Drupal\Core\Render\ElementInfoManagerInterface::getInfo().
  *
  * @see \Drupal\Core\Render\ElementInfoManager
  * @see \Drupal\Core\Render\Element\ElementInterface
  */
-function hook_element_info_alter(array &$types) {
+function hook_element_info_alter(array &$info) {
   // Decrease the default size of textfields.
-  if (isset($types['textfield']['#size'])) {
-    $types['textfield']['#size'] = 40;
+  if (isset($info['textfield']['#size'])) {
+    $info['textfield']['#size'] = 40;
   }
 }
 
@@ -926,10 +971,10 @@ function hook_library_info_alter(&$libraries, $extension) {
       // relative to the original extension, specify an absolute path (relative
       // to DRUPAL_ROOT / base_path()) to the new location.
       $new_path = '/' . drupal_get_path('module', 'farbtastic_update') . '/js';
-      $new_js = array();
-      $replacements = array(
+      $new_js = [];
+      $replacements = [
         $old_path . '/farbtastic.js' => $new_path . '/farbtastic-2.0.js',
-      );
+      ];
       foreach ($libraries['jquery.farbtastic']['js'] as $source => $options) {
         if (isset($replacements[$source])) {
           $new_js[$replacements[$source]] = $options;
@@ -998,7 +1043,7 @@ function hook_page_attachments(array &$attachments) {
  * @param array &$attachments
  *   Array of all attachments provided by hook_page_attachments() implementations.
  *
- * @see hook_page_attachments_alter()
+ * @see hook_page_attachments()
  */
 function hook_page_attachments_alter(array &$attachments) {
   // Conditionally remove an asset.
@@ -1073,15 +1118,15 @@ function hook_page_bottom(array &$page_bottom) {
  *     Template implementations receive each array key as a variable in the
  *     template file (so they must be legal PHP/Twig variable names). Function
  *     implementations are passed the variables in a single $variables function
- *     argument.
+ *     argument. If you are using these variables in a render array, prefix the
+ *     variable names defined here with a #.
  *   - render element: Used for render element items only: the name of the
  *     renderable element or element tree to pass to the theme function. This
  *     name is used as the name of the variable that holds the renderable
  *     element or tree in preprocess and process functions.
  *   - file: The file the implementation resides in. This file will be included
  *     prior to the theme being rendered, to make sure that the function or
- *     preprocess function (as needed) is actually loaded; this makes it
- *     possible to split theme functions out into separate files quite easily.
+ *     preprocess function (as needed) is actually loaded.
  *   - path: Override the path of the file to be used. Ordinarily the module or
  *     theme path will be used, but if the file will not be in the default
  *     path, include it here. This path should be relative to the Drupal root
@@ -1094,14 +1139,15 @@ function hook_page_bottom(array &$page_bottom) {
  *     specified, a default template name will be assumed. For example, if a
  *     module registers the 'search_result' theme hook, 'search-result' will be
  *     assigned as its template name.
- *   - function: If specified, this will be the function name to invoke for
- *     this implementation. If neither 'template' nor 'function' are specified,
- *     a default template name will be assumed. See above for more details.
+ *   - function: (deprecated in Drupal 8.0.x, will be removed in Drupal 9.0.x)
+ *     If specified, this will be the function name to invoke for this
+ *     implementation. If neither 'template' nor 'function' are specified, a
+ *     default template name will be assumed. See above for more details.
  *   - base hook: Used for theme suggestions only: the base theme hook name.
  *     Instead of this suggestion's implementation being used directly, the base
  *     hook will be invoked with this implementation as its first suggestion.
  *     The base hook's files will be included and the base hook's preprocess
- *     functions will be called in place of any suggestion's preprocess
+ *     functions will be called in addition to any suggestion's preprocess
  *     functions. If an implementation of hook_theme_suggestions_HOOK() (where
  *     HOOK is the base hook) changes the suggestion order, a different
  *     suggestion may be used in place of this suggestion. If after
@@ -1141,21 +1187,21 @@ function hook_page_bottom(array &$page_bottom) {
  * @see hook_theme_registry_alter()
  */
 function hook_theme($existing, $type, $theme, $path) {
-  return array(
-    'forum_display' => array(
-      'variables' => array('forums' => NULL, 'topics' => NULL, 'parents' => NULL, 'tid' => NULL, 'sortby' => NULL, 'forum_per_page' => NULL),
-    ),
-    'forum_list' => array(
-      'variables' => array('forums' => NULL, 'parents' => NULL, 'tid' => NULL),
-    ),
-    'forum_icon' => array(
-      'variables' => array('new_posts' => NULL, 'num_posts' => 0, 'comment_mode' => 0, 'sticky' => 0),
-    ),
-    'status_report' => array(
+  return [
+    'forum_display' => [
+      'variables' => ['forums' => NULL, 'topics' => NULL, 'parents' => NULL, 'tid' => NULL, 'sortby' => NULL, 'forum_per_page' => NULL],
+    ],
+    'forum_list' => [
+      'variables' => ['forums' => NULL, 'parents' => NULL, 'tid' => NULL],
+    ],
+    'forum_icon' => [
+      'variables' => ['new_posts' => NULL, 'num_posts' => 0, 'comment_mode' => 0, 'sticky' => 0],
+    ],
+    'status_report' => [
       'render element' => 'requirements',
       'file' => 'system.admin.inc',
-    ),
-  );
+    ],
+  ];
 }
 
 /**

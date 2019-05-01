@@ -1,13 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Config\Entity\ConfigEntityStorage.
- */
-
 namespace Drupal\Core\Config\Entity;
 
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Cache\MemoryCache\MemoryCacheInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\ConfigImporterException;
 use Drupal\Core\Entity\EntityInterface;
@@ -89,7 +85,7 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
    * @var array
    * @see \Drupal\Core\Config\ConfigFactoryInterface::getCacheKeys().
    */
-  protected $entities = array();
+  protected $entities = [];
 
   /**
    * Determines if the underlying configuration is retrieved override free.
@@ -109,9 +105,11 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
    *   The UUID service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
+   * @param \Drupal\Core\Cache\MemoryCache\MemoryCacheInterface|null $memory_cache
+   *   The memory cache backend.
    */
-  public function __construct(EntityTypeInterface $entity_type, ConfigFactoryInterface $config_factory, UuidInterface $uuid_service, LanguageManagerInterface $language_manager) {
-    parent::__construct($entity_type);
+  public function __construct(EntityTypeInterface $entity_type, ConfigFactoryInterface $config_factory, UuidInterface $uuid_service, LanguageManagerInterface $language_manager, MemoryCacheInterface $memory_cache = NULL) {
+    parent::__construct($entity_type, $memory_cache);
 
     $this->configFactory = $config_factory;
     $this->uuidService = $uuid_service;
@@ -126,7 +124,8 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
       $entity_type,
       $container->get('config.factory'),
       $container->get('uuid'),
-      $container->get('language_manager')
+      $container->get('language_manager'),
+      $container->get('entity.memory_cache')
     );
   }
 
@@ -175,7 +174,7 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
       $names = $this->configFactory->listAll($prefix);
     }
     else {
-      $names = array();
+      $names = [];
       foreach ($ids as $id) {
         // Add the prefix to the ID to serve as the configuration object name.
         $names[] = $prefix . $id;
@@ -225,7 +224,7 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
    */
   protected function doCreate(array $values) {
     // Set default language to current language if not provided.
-    $values += array($this->langcodeKey => $this->languageManager->getCurrentLanguage()->getId());
+    $values += [$this->langcodeKey => $this->languageManager->getCurrentLanguage()->getId()];
     $entity = new $this->entityClass($values, $this->entityTypeId);
 
     return $entity;
@@ -287,7 +286,7 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
     // Update the entity with the values stored in configuration. It is possible
     // that configuration schema has casted some of the values.
     if (!$entity->hasTrustedData()) {
-      $data = $this->mapFromStorageRecords(array($config->get()));
+      $data = $this->mapFromStorageRecords([$config->get()]);
       $updated_entity = current($data);
 
       foreach (array_keys($config->get()) as $property) {
@@ -322,43 +321,17 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
   }
 
   /**
-   * Gets entities from the static cache.
-   *
-   * @param array $ids
-   *   If not empty, return entities that match these IDs.
-   *
-   * @return \Drupal\Core\Entity\EntityInterface[]
-   *   Array of entities from the entity cache.
+   * {@inheritdoc}
    */
-  protected function getFromStaticCache(array $ids) {
-    $entities = array();
-    // Load any available entities from the internal cache.
-    if ($this->entityType->isStaticallyCacheable() && !empty($this->entities)) {
-      $config_overrides_key = $this->overrideFree ? '' : implode(':', $this->configFactory->getCacheKeys());
-      foreach ($ids as $id) {
-        if (!empty($this->entities[$id])) {
-          if (isset($this->entities[$id][$config_overrides_key])) {
-            $entities[$id] = $this->entities[$id][$config_overrides_key];
-          }
-        }
-      }
-    }
-    return $entities;
+  public function hasData() {
+    return (bool) $this->configFactory->listAll($this->getPrefix());
   }
 
   /**
-   * Stores entities in the static entity cache.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface[] $entities
-   *   Entities to store in the cache.
+   * {@inheritdoc}
    */
-  protected function setStaticCache(array $entities) {
-    if ($this->entityType->isStaticallyCacheable()) {
-      $config_overrides_key = $this->overrideFree ? '' : implode(':', $this->configFactory->getCacheKeys());
-      foreach ($entities as $id => $entity) {
-        $this->entities[$id][$config_overrides_key] = $entity;
-      }
-    }
+  protected function buildCacheId($id) {
+    return parent::buildCacheId($id) . ':' . ($this->overrideFree ? '' : implode(':', $this->configFactory->getCacheKeys()));
   }
 
   /**
@@ -371,9 +344,9 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
    */
   protected function invokeHook($hook, EntityInterface $entity) {
     // Invoke the hook.
-    $this->moduleHandler->invokeAll($this->entityTypeId . '_' . $hook, array($entity));
+    $this->moduleHandler->invokeAll($this->entityTypeId . '_' . $hook, [$entity]);
     // Invoke the respective entity-level hook.
-    $this->moduleHandler->invokeAll('entity_' . $hook, array($entity, $this->entityTypeId));
+    $this->moduleHandler->invokeAll('entity_' . $hook, [$entity, $this->entityTypeId]);
   }
 
   /**
@@ -387,8 +360,7 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
    * {@inheritdoc}
    */
   public function importCreate($name, Config $new_config, Config $old_config) {
-    $entity = $this->createFromStorageRecord($new_config->get());
-    $entity->setSyncing(TRUE);
+    $entity = $this->_doCreateFromStorageRecord($new_config->get(), TRUE);
     $entity->save();
     return TRUE;
   }
@@ -430,13 +402,35 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
    * {@inheritdoc}
    */
   public function createFromStorageRecord(array $values) {
+    return $this->_doCreateFromStorageRecord($values);
+  }
+
+  /**
+   * Helps create a configuration entity from storage values.
+   *
+   * Allows the configuration entity storage to massage storage values before
+   * creating an entity.
+   *
+   * @param array $values
+   *   The array of values from the configuration storage.
+   * @param bool $is_syncing
+   *   Is the configuration entity being created as part of a config sync.
+   *
+   * @return \Drupal\Core\Config\ConfigEntityInterface
+   *   The configuration entity.
+   *
+   * @see \Drupal\Core\Config\Entity\ConfigEntityStorageInterface::createFromStorageRecord()
+   * @see \Drupal\Core\Config\Entity\ImportableEntityStorageInterface::importCreate()
+   */
+  protected function _doCreateFromStorageRecord(array $values, $is_syncing = FALSE) {
     // Assign a new UUID if there is none yet.
     if ($this->uuidKey && $this->uuidService && !isset($values[$this->uuidKey])) {
       $values[$this->uuidKey] = $this->uuidService->generate();
     }
-    $data = $this->mapFromStorageRecords(array($values));
+    $data = $this->mapFromStorageRecords([$values]);
     $entity = current($data);
     $entity->original = clone $entity;
+    $entity->setSyncing($is_syncing);
     $entity->enforceIsNew();
     $entity->postCreate($this);
 
@@ -444,6 +438,7 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
     // entity object, for instance to fill-in default values.
     $this->invokeHook('create', $entity);
     return $entity;
+
   }
 
   /**
@@ -452,12 +447,30 @@ class ConfigEntityStorage extends EntityStorageBase implements ConfigEntityStora
   public function updateFromStorageRecord(ConfigEntityInterface $entity, array $values) {
     $entity->original = clone $entity;
 
-    $data = $this->mapFromStorageRecords(array($values));
+    $data = $this->mapFromStorageRecords([$values]);
     $updated_entity = current($data);
 
-    foreach (array_keys($values) as $property) {
-      $value = $updated_entity->get($property);
-      $entity->set($property, $value);
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityTypeInterface $entity_type */
+    $entity_type = $this->getEntityType();
+    $id_key = $entity_type->getKey('id');
+    $properties = $entity_type->getPropertiesToExport($updated_entity->get($id_key));
+
+    if (empty($properties)) {
+      // Fallback to using the provided values. If the properties cannot be
+      // determined for the config entity type annotation or configuration
+      // schema.
+      $properties = array_keys($values);
+    }
+    foreach ($properties as $property) {
+      if ($property === $this->uuidKey) {
+        // During an update the UUID field should not be copied. Under regular
+        // circumstances the values will be equal. If configuration is written
+        // twice during configuration install the updated entity will not have a
+        // UUID.
+        // @see \Drupal\Core\Config\ConfigInstaller::createConfiguration()
+        continue;
+      }
+      $entity->set($property, $updated_entity->get($property));
     }
 
     return $entity;

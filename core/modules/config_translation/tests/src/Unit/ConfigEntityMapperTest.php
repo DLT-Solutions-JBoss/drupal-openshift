@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\config_translation\Unit\ConfigEntityMapperTest.
- */
-
 namespace Drupal\Tests\config_translation\Unit;
 
 use Drupal\config_translation\ConfigEntityMapper;
@@ -50,9 +45,16 @@ class ConfigEntityMapperTest extends UnitTestCase {
   /**
    * The mocked language manager.
    *
-   * @var \Drupal\Core\Language\LanguageManagerInterface $language_manager|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Language\LanguageManagerInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   protected $languageManager;
+
+  /**
+   * The mocked event dispatcher.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $eventDispatcher;
 
   protected function setUp() {
     $this->entityManager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
@@ -67,14 +69,14 @@ class ConfigEntityMapperTest extends UnitTestCase {
       ->with('entity.configurable_language.edit_form')
       ->will($this->returnValue(new Route('/admin/config/regional/language/edit/{configurable_language}')));
 
-    $definition = array(
+    $definition = [
       'class' => '\Drupal\config_translation\ConfigEntityMapper',
       'base_route_name' => 'entity.configurable_language.edit_form',
       'title' => '@label language',
-      'names' => array(),
+      'names' => [],
       'entity_type' => 'configurable_language',
       'route_name' => 'config_translation.item.overview.entity.configurable_language.edit_form',
-    );
+    ];
 
     $typed_config_manager = $this->getMock('Drupal\Core\Config\TypedConfigManagerInterface');
 
@@ -83,6 +85,8 @@ class ConfigEntityMapperTest extends UnitTestCase {
       ->getMock();
 
     $this->languageManager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
+
+    $this->eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
 
     $this->configEntityMapper = new ConfigEntityMapper(
       'configurable_language',
@@ -94,7 +98,8 @@ class ConfigEntityMapperTest extends UnitTestCase {
       $this->routeProvider,
       $this->getStringTranslationStub(),
       $this->entityManager,
-      $this->languageManager
+      $this->languageManager,
+      $this->eventDispatcher
     );
   }
 
@@ -157,7 +162,7 @@ class ConfigEntityMapperTest extends UnitTestCase {
 
     $result = $this->configEntityMapper->getOverviewRouteParameters();
 
-    $this->assertSame(array('configurable_language' => 'entity_id'), $result);
+    $this->assertSame(['configurable_language' => 'entity_id'], $result);
   }
 
   /**
@@ -210,12 +215,12 @@ class ConfigEntityMapperTest extends UnitTestCase {
   public function testGetOperations() {
     $result = $this->configEntityMapper->getOperations();
 
-    $expected = array(
-      'list' => array(
+    $expected = [
+      'list' => [
         'title' => 'List',
         'url' => Url::fromRoute('config_translation.entity_list', ['mapper_id' => 'configurable_language']),
-      ),
-    );
+      ],
+    ];
 
     $this->assertEquals($expected, $result);
   }

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\conneg_test\Controller\TestController.
- */
-
 namespace Drupal\conneg_test\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -12,7 +7,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Test controller for content negotation tests.
+ * Test controller for content negotiation tests.
  */
 class TestController {
 

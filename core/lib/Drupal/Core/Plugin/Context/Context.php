@@ -1,16 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Plugin\Context\Context.
- */
-
 namespace Drupal\Core\Plugin\Context;
 
 use Drupal\Component\Plugin\Context\Context as ComponentContext;
 use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\TypedData\TypedDataInterface;
 use Drupal\Core\TypedData\TypedDataTrait;
 
@@ -20,6 +16,7 @@ use Drupal\Core\TypedData\TypedDataTrait;
 class Context extends ComponentContext implements ContextInterface {
 
   use TypedDataTrait;
+  use DependencySerializationTrait;
 
   /**
    * The data associated with the context.
@@ -47,7 +44,7 @@ class Context extends ComponentContext implements ContextInterface {
    *
    * @param \Drupal\Core\Plugin\Context\ContextDefinitionInterface $context_definition
    *   The context definition.
-   * @param mixed $context_value|NULL
+   * @param mixed|null $context_value
    *   The context value object.
    */
   public function __construct(ContextDefinitionInterface $context_definition, $context_value = NULL) {
@@ -127,7 +124,6 @@ class Context extends ComponentContext implements ContextInterface {
     }
     return $this->contextData;
   }
-
 
   /**
    * {@inheritdoc}

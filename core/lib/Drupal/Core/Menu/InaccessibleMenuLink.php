@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Menu\InaccessibleMenuLink.
- */
-
 namespace Drupal\Core\Menu;
 
 use Drupal\Component\Plugin\Exception\PluginException;
@@ -73,7 +68,6 @@ class InaccessibleMenuLink extends MenuLinkBase {
   public function getCacheMaxAge() {
     return $this->wrappedLink->getCacheMaxAge();
   }
-
 
   /**
    * {@inheritdoc}

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Plugin\Discovery\YamlDiscoveryDecorator.
- */
-
 namespace Drupal\Core\Plugin\Discovery;
 
 use Drupal\Component\Plugin\Discovery\DiscoveryInterface;
@@ -30,8 +25,8 @@ class YamlDiscoveryDecorator extends YamlDiscovery {
    * @param \Drupal\Component\Plugin\Discovery\DiscoveryInterface $decorated
    *   The discovery object that is being decorated.
    * @param string $name
-   *   The file name suffix to use for discovery. E.g. 'test' will become
-   *   'MODULE.test.yml'.
+   *   The file name suffix to use for discovery; for instance, 'test' will
+   *   become 'MODULE.test.yml'.
    * @param array $directories
    *   An array of directories to scan.
    */
@@ -52,7 +47,7 @@ class YamlDiscoveryDecorator extends YamlDiscovery {
    * Passes through all unknown calls onto the decorated object.
    */
   public function __call($method, $args) {
-    return call_user_func_array(array($this->decorated, $method), $args);
+    return call_user_func_array([$this->decorated, $method], $args);
   }
 
 }

@@ -1,28 +1,17 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\simpletest\TestServiceProvider.
- */
-
 namespace Drupal\simpletest;
 
-use Drupal\Core\DependencyInjection\ContainerBuilder;
-use Drupal\Core\DependencyInjection\ServiceProviderInterface;
+use Drupal\KernelTests\TestServiceProvider as CoreTestServiceProvider;
 
-class TestServiceProvider implements ServiceProviderInterface {
+/**
+ * Provides special routing services for tests.
+ *
+ * @deprecated in 8.6.0 for removal before Drupal 9.0.0. Use
+ *   Drupal\KernelTests\TestServiceProvider instead.
+ *
+ * @see https://www.drupal.org/node/2943146
+ */
+class TestServiceProvider extends CoreTestServiceProvider {
 
-  /**
-   * @var \Drupal\simpletest\TestBase;
-   */
-  public static $currentTest;
-
-  /**
-   * {@inheritdoc}
-   */
-  function register(ContainerBuilder $container) {
-    if (static::$currentTest && method_exists(static::$currentTest, 'containerBuild')) {
-      static::$currentTest->containerBuild($container);
-    }
-  }
 }

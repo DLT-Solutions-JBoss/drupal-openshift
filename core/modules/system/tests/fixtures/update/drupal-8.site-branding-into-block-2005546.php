@@ -7,11 +7,12 @@
  */
 
 use Drupal\Core\Database\Database;
+use Drupal\Core\Serialization\Yaml;
 
 $connection = Database::getConnection();
 
 // Structure of a custom block with visibility settings.
-$block_configs[] = \Drupal\Component\Serialization\Yaml::decode(file_get_contents(__DIR__ . '/block.block.testfor2005546.yml'));
+$block_configs[] = Yaml::decode(file_get_contents(__DIR__ . '/block.block.testfor2005546.yml'));
 
 foreach ($block_configs as $block_config) {
   $connection->insert('config')
@@ -39,7 +40,7 @@ $existing_blocks = unserialize($existing_blocks);
 
 $connection->update('key_value')
   ->fields([
-    'value' => serialize(array_merge($existing_blocks, ['block.block.bartik_branding']))
+    'value' => serialize(array_merge($existing_blocks, ['block.block.bartik_branding'])),
   ])
   ->condition('collection', 'config.entity.key_store.block')
   ->condition('name', 'theme:bartik')
@@ -54,7 +55,7 @@ $extensions = $connection->select('config')
 $extensions = unserialize($extensions);
 $connection->update('config')
   ->fields([
-    'data' => serialize(array_merge_recursive($extensions, ['theme' => ['test_theme' => 0]]))
+    'data' => serialize(array_merge_recursive($extensions, ['theme' => ['test_theme' => 0]])),
   ])
   ->condition('name', 'core.extension')
   ->execute();

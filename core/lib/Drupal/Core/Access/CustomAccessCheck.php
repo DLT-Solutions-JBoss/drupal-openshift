@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Access\CustomAccessCheck.
- */
-
 namespace Drupal\Core\Access;
 
 use Drupal\Core\Controller\ControllerResolverInterface;
@@ -55,6 +50,8 @@ class CustomAccessCheck implements RoutingAccessInterface {
   /**
    * Checks access for the account and route using the custom access checker.
    *
+   * @param \Symfony\Component\Routing\Route $route
+   *   The route.
    * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
    *   The route match object to be checked.
    * @param \Drupal\Core\Session\AccountInterface $account
@@ -64,7 +61,14 @@ class CustomAccessCheck implements RoutingAccessInterface {
    *   The access result.
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
-    $callable = $this->controllerResolver->getControllerFromDefinition($route->getRequirement('_custom_access'));
+    try {
+      $callable = $this->controllerResolver->getControllerFromDefinition($route->getRequirement('_custom_access'));
+    }
+    catch (\InvalidArgumentException $e) {
+      // The custom access controller method was not found.
+      throw new \BadMethodCallException(sprintf('The "%s" method is not callable as a _custom_access callback in route "%s"', $route->getRequirement('_custom_access'), $route->getPath()));
+    }
+
     $arguments_resolver = $this->argumentsResolverFactory->getArgumentsResolver($route_match, $account);
     $arguments = $arguments_resolver->getArguments($callable);
 

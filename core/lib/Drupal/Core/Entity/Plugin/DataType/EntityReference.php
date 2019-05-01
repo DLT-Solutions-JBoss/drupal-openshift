@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Entity\Plugin\DataType\EntityReference.
- */
-
 namespace Drupal\Core\Entity\Plugin\DataType;
 
 use Drupal\Core\Entity\EntityInterface;
@@ -21,7 +16,7 @@ use Drupal\Core\TypedData\DataReferenceBase;
  * or the entity ID may be passed.
  *
  * Note that the definition of the referenced entity's type is required, whereas
- * defining referencable entity bundle(s) is optional. A reference defining the
+ * defining referenceable entity bundle(s) is optional. A reference defining the
  * type and bundle of the referenced entity can be created as following:
  * @code
  * $definition = \Drupal\Core\Entity\EntityDefinition::create($entity_type)
@@ -41,7 +36,7 @@ class EntityReference extends DataReferenceBase {
   /**
    * The entity ID.
    *
-   * @var integer|string
+   * @var int|string
    */
   protected $id;
 
@@ -72,7 +67,9 @@ class EntityReference extends DataReferenceBase {
   public function getTarget() {
     if (!isset($this->target) && isset($this->id)) {
       // If we have a valid reference, return the entity's TypedData adapter.
-      $entity = entity_load($this->getTargetDefinition()->getEntityTypeId(), $this->id);
+      $entity = \Drupal::entityTypeManager()
+        ->getStorage($this->getTargetDefinition()->getEntityTypeId())
+        ->load($this->id);
       $this->target = isset($entity) ? $entity->getTypedData() : NULL;
     }
     return $this->target;
@@ -126,4 +123,5 @@ class EntityReference extends DataReferenceBase {
     }
     return '';
   }
+
 }

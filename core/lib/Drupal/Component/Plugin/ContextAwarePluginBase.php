@@ -1,13 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Component\Plugin\ContextAwarePluginBase.
- */
-
 namespace Drupal\Component\Plugin;
 
 use Drupal\Component\Plugin\Context\ContextInterface;
+use Drupal\Component\Plugin\Definition\ContextAwarePluginDefinitionInterface;
 use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Component\Plugin\Context\Context;
 use Symfony\Component\Validator\ConstraintViolationList;
@@ -72,7 +68,12 @@ abstract class ContextAwarePluginBase extends PluginBase implements ContextAware
    */
   public function getContextDefinitions() {
     $definition = $this->getPluginDefinition();
-    return !empty($definition['context']) ? $definition['context'] : array();
+    if ($definition instanceof ContextAwarePluginDefinitionInterface) {
+      return $definition->getContextDefinitions();
+    }
+    else {
+      return !empty($definition['context']) ? $definition['context'] : [];
+    }
   }
 
   /**
@@ -80,10 +81,15 @@ abstract class ContextAwarePluginBase extends PluginBase implements ContextAware
    */
   public function getContextDefinition($name) {
     $definition = $this->getPluginDefinition();
-    if (empty($definition['context'][$name])) {
-      throw new ContextException(sprintf("The %s context is not a valid context.", $name));
+    if ($definition instanceof ContextAwarePluginDefinitionInterface) {
+      if ($definition->hasContextDefinition($name)) {
+        return $definition->getContextDefinition($name);
+      }
     }
-    return $definition['context'][$name];
+    elseif (!empty($definition['context'][$name])) {
+      return $definition['context'][$name];
+    }
+    throw new ContextException(sprintf("The %s context is not a valid context.", $name));
   }
 
   /**
@@ -119,7 +125,7 @@ abstract class ContextAwarePluginBase extends PluginBase implements ContextAware
    * {@inheritdoc}
    */
   public function getContextValues() {
-    $values = array();
+    $values = [];
     foreach ($this->getContextDefinitions() as $name => $definition) {
       $values[$name] = isset($this->context[$name]) ? $this->context[$name]->getContextValue() : NULL;
     }

@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Core\Render\HtmlResponseAttachmentsProcessor.
- */
 
 namespace Drupal\Core\Render;
 
@@ -388,8 +384,8 @@ class HtmlResponseAttachmentsProcessor implements AttachmentsResponseProcessorIn
   /**
    * Transform a html_head_link array into html_head and http_header arrays.
    *
-   * html_head_link is a special case of html_head which can be present as
-   * a link item in the HTML head section, and also as a Link: HTTP header,
+   * Variable html_head_link is a special case of html_head which can be present
+   * as a link item in the HTML head section, and also as a Link: HTTP header,
    * depending on options in the render array. Processing it can add to both the
    * html_head and http_header sections.
    *
@@ -414,18 +410,22 @@ class HtmlResponseAttachmentsProcessor implements AttachmentsResponseProcessorIn
       $attributes = $item[0];
       $should_add_header = isset($item[1]) ? $item[1] : FALSE;
 
-      $element = array(
+      $element = [
         '#tag' => 'link',
         '#attributes' => $attributes,
-      );
+      ];
       $href = $attributes['href'];
       $attached['html_head'][] = [$element, 'html_head_link:' . $attributes['rel'] . ':' . $href];
 
       if ($should_add_header) {
         // Also add a HTTP header "Link:".
-        $href = '<' . Html::escape($attributes['href'] . '>');
+        $href = '<' . Html::escape($attributes['href']) . '>';
         unset($attributes['href']);
-        $attached['http_header'][] = ['Link', $href . drupal_http_header_attributes($attributes), TRUE];
+        if ($param = drupal_http_header_attributes($attributes)) {
+          $href .= ';' . $param;
+        }
+
+        $attached['http_header'][] = ['Link', $href, FALSE];
       }
     }
     return $attached;
@@ -446,7 +446,7 @@ class HtmlResponseAttachmentsProcessor implements AttachmentsResponseProcessorIn
    */
   protected function processFeed($attached_feed) {
     $html_head_link = [];
-    foreach($attached_feed as $item) {
+    foreach ($attached_feed as $item) {
       $feed_link = [
         'href' => $item[0],
         'rel' => 'alternate',

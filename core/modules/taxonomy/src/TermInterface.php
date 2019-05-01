@@ -1,19 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\taxonomy\TermInterface.
- */
-
 namespace Drupal\taxonomy;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
+use Drupal\Core\Entity\EntityPublishedInterface;
 
 /**
  * Provides an interface defining a taxonomy term entity.
  */
-interface TermInterface extends ContentEntityInterface, EntityChangedInterface {
+interface TermInterface extends ContentEntityInterface, EntityChangedInterface, EntityPublishedInterface {
 
   /**
    * Gets the term's description.
@@ -62,7 +58,7 @@ interface TermInterface extends ContentEntityInterface, EntityChangedInterface {
   /**
    * Sets the name of the term.
    *
-   * @param int $name
+   * @param string $name
    *   The term's name.
    *
    * @return $this
@@ -90,8 +86,11 @@ interface TermInterface extends ContentEntityInterface, EntityChangedInterface {
   /**
    * Get the taxonomy vocabulary id this term belongs to.
    *
-   * @return int
+   * @return string
    *   The id of the vocabulary.
+   *
+   * @deprecated Scheduled for removal before Drupal 9.0.0. Use
+   *   TermInterface::bundle() instead.
    */
   public function getVocabularyId();
 

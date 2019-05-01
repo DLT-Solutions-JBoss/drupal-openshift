@@ -1,17 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\block_test\ContextProvider\MultipleStaticContext.
- */
-
 namespace Drupal\block_test\ContextProvider;
 
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Plugin\Context\Context;
-use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\Core\Plugin\Context\ContextProviderInterface;
+use Drupal\Core\Plugin\Context\EntityContext;
 use Drupal\Core\Session\AccountInterface;
 
 /**
@@ -52,9 +46,8 @@ class MultipleStaticContext implements ContextProviderInterface {
   public function getRuntimeContexts(array $unqualified_context_ids) {
     $current_user = $this->userStorage->load($this->account->id());
 
-    $context1 = new Context(new ContextDefinition('entity:user', 'User 1'), $current_user);
-
-    $context2 = new Context(new ContextDefinition('entity:user', 'User 2'), $current_user);
+    $context1 = EntityContext::fromEntity($current_user, 'User A');
+    $context2 = EntityContext::fromEntity($current_user, 'User B');
 
     $cacheability = new CacheableMetadata();
     $cacheability->setCacheContexts(['user']);
@@ -63,8 +56,8 @@ class MultipleStaticContext implements ContextProviderInterface {
     $context2->addCacheableDependency($cacheability);
 
     return [
-      'user1' => $context1,
-      'user2' => $context2,
+      'userA' => $context1,
+      'userB' => $context2,
     ];
   }
 

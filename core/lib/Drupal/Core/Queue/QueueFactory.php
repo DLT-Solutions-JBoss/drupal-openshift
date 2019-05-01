@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Queue\QueueFactory.
- */
-
 namespace Drupal\Core\Queue;
 
 use Drupal\Core\Site\Settings;
@@ -23,7 +18,7 @@ class QueueFactory implements ContainerAwareInterface {
    *
    * @var array
    */
-  protected $queues = array();
+  protected $queues = [];
 
   /**
    * The settings object.
@@ -32,11 +27,10 @@ class QueueFactory implements ContainerAwareInterface {
    */
   protected $settings;
 
-
   /**
    * Constructs a queue factory.
    */
-  function __construct(Settings $settings) {
+  public function __construct(Settings $settings) {
     $this->settings = $settings;
   }
 
@@ -68,5 +62,5 @@ class QueueFactory implements ContainerAwareInterface {
     }
     return $this->queues[$name];
   }
-}
 
+}

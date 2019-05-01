@@ -11,6 +11,14 @@ menu_test.local_action5:
   appears_on:
     - menu_test.local_action1
 
+menu_test.local_action.cache_check:
+  route_name: menu_test.local_action5
+  class: '\Drupal\menu_test\Plugin\Menu\LocalAction\TestLocalActionWithConfig'
+  cache_tags:
+    - config:menu_test.links.action
+  appears_on:
+    - menu_test.local_action6
+
 menu_test.local_action2:
   route_name: menu_test.local_action2
   title: 'My hook_menu action'
@@ -41,6 +49,18 @@ menu_test.local_action6:
   class: '\Drupal\menu_test\Plugin\Menu\LocalAction\TestLocalAction5'
   appears_on:
     - menu_test.local_action1
+
+menu_test.local_action7:
+  route_name: menu_test.local_action7
+  title: 'Local action with access'
+  appears_on:
+    - menu_test.local_action7
+
+menu_test.local_action8:
+  route_name: menu_test.local_action8
+  title: 'Local action without access'
+  appears_on:
+    - menu_test.local_action7
 
 menu_test.hidden_menu_add:
   route_name: menu_test.hidden_menu_add

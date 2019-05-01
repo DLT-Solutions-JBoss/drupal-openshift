@@ -45,7 +45,7 @@
  *
  * These variables are provided to give context about the parent comment (if
  * any):
- * - comment_parent: Full parent comment entity (if any).
+ * - parent_comment: Full parent comment entity (if any).
  * - parent_author: Equivalent to author for the parent comment.
  * - parent_created: Equivalent to created for the parent comment.
  * - parent_changed: Equivalent to changed for the parent comment.
@@ -64,9 +64,6 @@
  * @see template_preprocess_comment()
  */
 #}
-{% if threaded %}
-  {{ attach_library('classy/drupal.comment.threaded') }}
-{% endif %}
 {%
   set classes = [
     'comment',
@@ -106,9 +103,6 @@
       <h3{{ title_attributes }}>{{ title }}</h3>
       {{ title_suffix }}
     {% endif %}
-    {{ content|without('links') }}
-    {% if content.links %}
-      <nav>{{ content.links }}</nav>
-    {% endif %}
+    {{ content }}
   </div>
 </article>

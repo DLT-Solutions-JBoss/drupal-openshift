@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Config\Entity\ConfigEntityInterface.
- */
-
 namespace Drupal\Core\Config\Entity;
 
 use Drupal\Core\Entity\EntityInterface;
@@ -169,9 +164,6 @@ interface ConfigEntityInterface extends EntityInterface, ThirdPartySettingsInter
    *   Dependency types are, for example, entity, module and theme.
    *
    * @return bool
-   *   TRUE if the entity has changed, FALSE if not.
-   *
-   * @return bool
    *   TRUE if the entity has been changed as a result, FALSE if not.
    *
    * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
@@ -197,7 +189,7 @@ interface ConfigEntityInterface extends EntityInterface, ThirdPartySettingsInter
    * For example, a default view might not be installable if the base table
    * doesn't exist.
    *
-   * @retun bool
+   * @return bool
    *   TRUE if the entity is installable, FALSE otherwise.
    */
   public function isInstallable();

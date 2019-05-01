@@ -1,13 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Plugin\PluginBase.
- */
-
 namespace Drupal\Core\Plugin;
 
 use Drupal\Component\Plugin\PluginBase as ComponentPluginBase;
+use Drupal\Core\Messenger\MessengerTrait;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
@@ -19,5 +15,6 @@ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 abstract class PluginBase extends ComponentPluginBase {
   use StringTranslationTrait;
   use DependencySerializationTrait;
+  use MessengerTrait;
 
 }

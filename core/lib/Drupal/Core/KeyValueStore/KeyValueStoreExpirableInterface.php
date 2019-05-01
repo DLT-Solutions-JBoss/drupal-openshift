@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\KeyValueStore\KeyValueStoreExpirableInterface.
- */
-
 namespace Drupal\Core\KeyValueStore;
 
 /**
@@ -26,6 +21,8 @@ interface KeyValueStoreExpirableInterface extends KeyValueStoreInterface {
 
   /**
    * Sets a value for a given key with a time to live if it does not yet exist.
+   *
+   * If a key is expired it also does not exists.
    *
    * @param string $key
    *   The key of the data to store.

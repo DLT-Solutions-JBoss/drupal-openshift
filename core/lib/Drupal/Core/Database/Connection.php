@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Database\Connection.
- */
-
 namespace Drupal\Core\Database;
 
 /**
@@ -55,14 +50,14 @@ abstract class Connection {
    *
    * @var array
    */
-  protected $transactionLayers = array();
+  protected $transactionLayers = [];
 
   /**
    * Index of what driver-specific class to use for various operations.
    *
    * @var array
    */
-  protected $driverClasses = array();
+  protected $driverClasses = [];
 
   /**
    * The name of the Statement class for this connection.
@@ -90,7 +85,7 @@ abstract class Connection {
   /**
    * An index used to generate unique temporary table names.
    *
-   * @var integer
+   * @var int
    */
   protected $temporaryNameIndex = 0;
 
@@ -106,7 +101,7 @@ abstract class Connection {
    *
    * @var array
    */
-  protected $connectionOptions = array();
+  protected $connectionOptions = [];
 
   /**
    * The schema object for this connection.
@@ -122,21 +117,21 @@ abstract class Connection {
    *
    * @var array
    */
-  protected $prefixes = array();
+  protected $prefixes = [];
 
   /**
    * List of search values for use in prefixTables().
    *
    * @var array
    */
-  protected $prefixSearch = array();
+  protected $prefixSearch = [];
 
   /**
    * List of replacement values for use in prefixTables().
    *
    * @var array
    */
-  protected $prefixReplace = array();
+  protected $prefixReplace = [];
 
   /**
    * List of un-prefixed table names, keyed by prefixed table names.
@@ -144,6 +139,20 @@ abstract class Connection {
    * @var array
    */
   protected $unprefixedTablesMap = [];
+
+  /**
+   * List of escaped database, table, and field names, keyed by unescaped names.
+   *
+   * @var array
+   */
+  protected $escapedNames = [];
+
+  /**
+   * List of escaped aliases names, keyed by unescaped aliases.
+   *
+   * @var array
+   */
+  protected $escapedAliases = [];
 
   /**
    * Constructs a Connection object.
@@ -162,7 +171,7 @@ abstract class Connection {
 
     // Set a Statement class, unless the driver opted out.
     if (!empty($this->statementClass)) {
-      $connection->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array($this->statementClass, array($this)));
+      $connection->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [$this->statementClass, [$this]]);
     }
 
     $this->connection = $connection;
@@ -178,7 +187,7 @@ abstract class Connection {
    * @return \PDO
    *   A \PDO object.
    */
-  public static function open(array &$connection_options = array()) { }
+  public static function open(array &$connection_options = []) {}
 
   /**
    * Destroys this Connection object.
@@ -193,7 +202,7 @@ abstract class Connection {
     // The Statement class attribute only accepts a new value that presents a
     // proper callable, so we reset it to PDOStatement.
     if (!empty($this->statementClass)) {
-      $this->connection->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array('PDOStatement', array()));
+      $this->connection->setAttribute(\PDO::ATTR_STATEMENT_CLASS, ['PDOStatement', []]);
     }
     $this->schema = NULL;
   }
@@ -250,13 +259,13 @@ abstract class Connection {
    *   An array of default query options.
    */
   protected function defaultOptions() {
-    return array(
+    return [
       'target' => 'default',
       'fetch' => \PDO::FETCH_OBJ,
       'return' => Database::RETURN_STATEMENT,
       'throw_exception' => TRUE,
       'allow_delimiter_in_query' => FALSE,
-    );
+    ];
   }
 
   /**
@@ -284,16 +293,16 @@ abstract class Connection {
    */
   protected function setPrefix($prefix) {
     if (is_array($prefix)) {
-      $this->prefixes = $prefix + array('default' => '');
+      $this->prefixes = $prefix + ['default' => ''];
     }
     else {
-      $this->prefixes = array('default' => $prefix);
+      $this->prefixes = ['default' => $prefix];
     }
 
     // Set up variables for use in prefixTables(). Replace table-specific
     // prefixes first.
-    $this->prefixSearch = array();
-    $this->prefixReplace = array();
+    $this->prefixSearch = [];
+    $this->prefixReplace = [];
     foreach ($this->prefixes as $key => $val) {
       if ($key != 'default') {
         $this->prefixSearch[] = '{' . $key . '}';
@@ -494,8 +503,9 @@ abstract class Connection {
    *   A sanitized comment string.
    */
   public function makeComment($comments) {
-    if (empty($comments))
+    if (empty($comments)) {
       return '';
+    }
 
     // Flatten the array of comments.
     $comment = implode('. ', $comments);
@@ -587,7 +597,7 @@ abstract class Connection {
    *
    * @see \Drupal\Core\Database\Connection::defaultOptions()
    */
-  public function query($query, array $args = array(), $options = array()) {
+  public function query($query, array $args = [], $options = []) {
     // Use default values if not already set.
     $options += $this->defaultOptions();
 
@@ -661,7 +671,7 @@ abstract class Connection {
    * @throws \Drupal\Core\Database\DatabaseExceptionWrapper
    * @throws \Drupal\Core\Database\IntegrityConstraintViolationException
    */
-  protected function handleQueryException(\PDOException $e, $query, array $args = array(), $options = array()) {
+  protected function handleQueryException(\PDOException $e, $query, array $args = [], $options = []) {
     if ($options['throw_exception']) {
       // Wrap the exception in another exception, because PHP does not allow
       // overriding Exception::getMessage(). Its message is the extra database
@@ -723,7 +733,7 @@ abstract class Connection {
       }
       // Handle expansion of arrays.
       $key_name = str_replace('[]', '__', $key);
-      $new_keys = array();
+      $new_keys = [];
       // We require placeholders to have trailing brackets if the developer
       // intends them to be expanded to an array to make the intent explicit.
       foreach (array_values($data) as $i => $value) {
@@ -758,14 +768,11 @@ abstract class Connection {
    */
   public function getDriverClass($class) {
     if (empty($this->driverClasses[$class])) {
-      $driver = $this->driver();
-      if (!empty($this->connectionOptions['namespace'])) {
-        $driver_class  = $this->connectionOptions['namespace'] . '\\' . $class;
+      if (empty($this->connectionOptions['namespace'])) {
+        // Fallback for Drupal 7 settings.php and the test runner script.
+        $this->connectionOptions['namespace'] = (new \ReflectionObject($this))->getNamespaceName();
       }
-      else {
-        // Fallback for Drupal 7 settings.php.
-        $driver_class = "Drupal\\Core\\Database\\Driver\\{$driver}\\{$class}";
-      }
+      $driver_class = $this->connectionOptions['namespace'] . '\\' . $class;
       $this->driverClasses[$class] = class_exists($driver_class) ? $driver_class : $class;
     }
     return $this->driverClasses[$class];
@@ -790,7 +797,7 @@ abstract class Connection {
    *
    * @see \Drupal\Core\Database\Query\Select
    */
-  public function select($table, $alias = NULL, array $options = array()) {
+  public function select($table, $alias = NULL, array $options = []) {
     $class = $this->getDriverClass('Select');
     return new $class($table, $alias, $this, $options);
   }
@@ -801,14 +808,17 @@ abstract class Connection {
    * @param string $table
    *   The table to use for the insert statement.
    * @param array $options
-   *   (optional) An array of options on the query.
+   *   (optional) An associative array of options to control how the query is
+   *   run. The given options will be merged with
+   *   \Drupal\Core\Database\Connection::defaultOptions().
    *
    * @return \Drupal\Core\Database\Query\Insert
    *   A new Insert query object.
    *
    * @see \Drupal\Core\Database\Query\Insert
+   * @see \Drupal\Core\Database\Connection::defaultOptions()
    */
-  public function insert($table, array $options = array()) {
+  public function insert($table, array $options = []) {
     $class = $this->getDriverClass('Insert');
     return new $class($this, $table, $options);
   }
@@ -826,7 +836,7 @@ abstract class Connection {
    *
    * @see \Drupal\Core\Database\Query\Merge
    */
-  public function merge($table, array $options = array()) {
+  public function merge($table, array $options = []) {
     $class = $this->getDriverClass('Merge');
     return new $class($this, $table, $options);
   }
@@ -844,7 +854,7 @@ abstract class Connection {
    *
    * @see \Drupal\Core\Database\Query\Upsert
    */
-  public function upsert($table, array $options = array()) {
+  public function upsert($table, array $options = []) {
     $class = $this->getDriverClass('Upsert');
     return new $class($this, $table, $options);
   }
@@ -855,14 +865,17 @@ abstract class Connection {
    * @param string $table
    *   The table to use for the update statement.
    * @param array $options
-   *   (optional) An array of options on the query.
+   *   (optional) An associative array of options to control how the query is
+   *   run. The given options will be merged with
+   *   \Drupal\Core\Database\Connection::defaultOptions().
    *
    * @return \Drupal\Core\Database\Query\Update
    *   A new Update query object.
    *
    * @see \Drupal\Core\Database\Query\Update
+   * @see \Drupal\Core\Database\Connection::defaultOptions()
    */
-  public function update($table, array $options = array()) {
+  public function update($table, array $options = []) {
     $class = $this->getDriverClass('Update');
     return new $class($this, $table, $options);
   }
@@ -873,14 +886,17 @@ abstract class Connection {
    * @param string $table
    *   The table to use for the delete statement.
    * @param array $options
-   *   (optional) An array of options on the query.
+   *   (optional) An associative array of options to control how the query is
+   *   run. The given options will be merged with
+   *   \Drupal\Core\Database\Connection::defaultOptions().
    *
    * @return \Drupal\Core\Database\Query\Delete
    *   A new Delete query object.
    *
    * @see \Drupal\Core\Database\Query\Delete
+   * @see \Drupal\Core\Database\Connection::defaultOptions()
    */
-  public function delete($table, array $options = array()) {
+  public function delete($table, array $options = []) {
     $class = $this->getDriverClass('Delete');
     return new $class($this, $table, $options);
   }
@@ -898,7 +914,7 @@ abstract class Connection {
    *
    * @see \Drupal\Core\Database\Query\Truncate
    */
-  public function truncate($table, array $options = array()) {
+  public function truncate($table, array $options = []) {
     $class = $this->getDriverClass('Truncate');
     return new $class($this, $table, $options);
   }
@@ -933,7 +949,10 @@ abstract class Connection {
    *   The sanitized database name.
    */
   public function escapeDatabase($database) {
-    return preg_replace('/[^A-Za-z0-9_.]+/', '', $database);
+    if (!isset($this->escapedNames[$database])) {
+      $this->escapedNames[$database] = preg_replace('/[^A-Za-z0-9_.]+/', '', $database);
+    }
+    return $this->escapedNames[$database];
   }
 
   /**
@@ -950,7 +969,10 @@ abstract class Connection {
    *   The sanitized table name.
    */
   public function escapeTable($table) {
-    return preg_replace('/[^A-Za-z0-9_.]+/', '', $table);
+    if (!isset($this->escapedNames[$table])) {
+      $this->escapedNames[$table] = preg_replace('/[^A-Za-z0-9_.]+/', '', $table);
+    }
+    return $this->escapedNames[$table];
   }
 
   /**
@@ -967,7 +989,10 @@ abstract class Connection {
    *   The sanitized field name.
    */
   public function escapeField($field) {
-    return preg_replace('/[^A-Za-z0-9_.]+/', '', $field);
+    if (!isset($this->escapedNames[$field])) {
+      $this->escapedNames[$field] = preg_replace('/[^A-Za-z0-9_.]+/', '', $field);
+    }
+    return $this->escapedNames[$field];
   }
 
   /**
@@ -985,7 +1010,10 @@ abstract class Connection {
    *   The sanitized alias name.
    */
   public function escapeAlias($field) {
-    return preg_replace('/[^A-Za-z0-9_]+/', '', $field);
+    if (!isset($this->escapedAliases[$field])) {
+      $this->escapedAliases[$field] = preg_replace('/[^A-Za-z0-9_]+/', '', $field);
+    }
+    return $this->escapedAliases[$field];
   }
 
   /**
@@ -1065,9 +1093,9 @@ abstract class Connection {
    * @throws \Drupal\Core\Database\TransactionOutOfOrderException
    * @throws \Drupal\Core\Database\TransactionNoActiveException
    *
-   * @see \Drupal\Core\Database\Transaction::rollback()
+   * @see \Drupal\Core\Database\Transaction::rollBack()
    */
-  public function rollback($savepoint_name = 'drupal_transaction') {
+  public function rollBack($savepoint_name = 'drupal_transaction') {
     if (!$this->supportsTransactions()) {
       return;
     }
@@ -1161,7 +1189,7 @@ abstract class Connection {
     // The transaction has already been committed earlier. There is nothing we
     // need to do. If this transaction was part of an earlier out-of-order
     // rollback, an exception would already have been thrown by
-    // Database::rollback().
+    // Database::rollBack().
     if (!isset($this->transactionLayers[$name])) {
       return;
     }
@@ -1219,7 +1247,7 @@ abstract class Connection {
    *   A database query result resource, or NULL if the query was not executed
    *   correctly.
    */
-  abstract public function queryRange($query, $from, $count, array $args = array(), array $options = array());
+  abstract public function queryRange($query, $from, $count, array $args = [], array $options = []);
 
   /**
    * Generates a temporary table name.
@@ -1256,7 +1284,7 @@ abstract class Connection {
    * @return string
    *   The name of the temporary table.
    */
-  abstract function queryTemporary($query, array $args = array(), array $options = array());
+  abstract public function queryTemporary($query, array $args = [], array $options = []);
 
   /**
    * Returns the type of database driver.
@@ -1403,7 +1431,7 @@ abstract class Connection {
    *
    * @see \PDO::prepare()
    */
-  public function prepare($statement, array $driver_options = array()) {
+  public function prepare($statement, array $driver_options = []) {
     return $this->connection->prepare($statement, $driver_options);
   }
 
@@ -1427,10 +1455,142 @@ abstract class Connection {
   }
 
   /**
+   * Extracts the SQLSTATE error from the PDOException.
+   *
+   * @param \Exception $e
+   *   The exception
+   *
+   * @return string
+   *   The five character error code.
+   */
+  protected static function getSQLState(\Exception $e) {
+    // The PDOException code is not always reliable, try to see whether the
+    // message has something usable.
+    if (preg_match('/^SQLSTATE\[(\w{5})\]/', $e->getMessage(), $matches)) {
+      return $matches[1];
+    }
+    else {
+      return $e->getCode();
+    }
+  }
+
+  /**
    * Prevents the database connection from being serialized.
    */
   public function __sleep() {
     throw new \LogicException('The database connection is not serializable. This probably means you are serializing an object that has an indirect reference to the database connection. Adjust your code so that is not necessary. Alternatively, look at DependencySerializationTrait as a temporary solution.');
+  }
+
+  /**
+   * Creates an array of database connection options from a URL.
+   *
+   * @internal
+   *   This method should not be called. Use
+   *   \Drupal\Core\Database\Database::convertDbUrlToConnectionInfo() instead.
+   *
+   * @param string $url
+   *   The URL.
+   * @param string $root
+   *   The root directory of the Drupal installation. Some database drivers,
+   *   like for example SQLite, need this information.
+   *
+   * @return array
+   *   The connection options.
+   *
+   * @throws \InvalidArgumentException
+   *   Exception thrown when the provided URL does not meet the minimum
+   *   requirements.
+   *
+   * @see \Drupal\Core\Database\Database::convertDbUrlToConnectionInfo()
+   */
+  public static function createConnectionOptionsFromUrl($url, $root) {
+    $url_components = parse_url($url);
+    if (!isset($url_components['scheme'], $url_components['host'], $url_components['path'])) {
+      throw new \InvalidArgumentException('Minimum requirement: driver://host/database');
+    }
+
+    $url_components += [
+      'user' => '',
+      'pass' => '',
+      'fragment' => '',
+    ];
+
+    // Remove leading slash from the URL path.
+    if ($url_components['path'][0] === '/') {
+      $url_components['path'] = substr($url_components['path'], 1);
+    }
+
+    // Use reflection to get the namespace of the class being called.
+    $reflector = new \ReflectionClass(get_called_class());
+
+    $database = [
+      'driver' => $url_components['scheme'],
+      'username' => $url_components['user'],
+      'password' => $url_components['pass'],
+      'host' => $url_components['host'],
+      'database' => $url_components['path'],
+      'namespace' => $reflector->getNamespaceName(),
+    ];
+
+    if (isset($url_components['port'])) {
+      $database['port'] = $url_components['port'];
+    }
+
+    if (!empty($url_components['fragment'])) {
+      $database['prefix']['default'] = $url_components['fragment'];
+    }
+
+    return $database;
+  }
+
+  /**
+   * Creates a URL from an array of database connection options.
+   *
+   * @internal
+   *   This method should not be called. Use
+   *   \Drupal\Core\Database\Database::getConnectionInfoAsUrl() instead.
+   *
+   * @param array $connection_options
+   *   The array of connection options for a database connection.
+   *
+   * @return string
+   *   The connection info as a URL.
+   *
+   * @throws \InvalidArgumentException
+   *   Exception thrown when the provided array of connection options does not
+   *   meet the minimum requirements.
+   *
+   * @see \Drupal\Core\Database\Database::getConnectionInfoAsUrl()
+   */
+  public static function createUrlFromConnectionOptions(array $connection_options) {
+    if (!isset($connection_options['driver'], $connection_options['database'])) {
+      throw new \InvalidArgumentException("As a minimum, the connection options array must contain at least the 'driver' and 'database' keys");
+    }
+
+    $user = '';
+    if (isset($connection_options['username'])) {
+      $user = $connection_options['username'];
+      if (isset($connection_options['password'])) {
+        $user .= ':' . $connection_options['password'];
+      }
+      $user .= '@';
+    }
+
+    $host = empty($connection_options['host']) ? 'localhost' : $connection_options['host'];
+
+    $db_url = $connection_options['driver'] . '://' . $user . $host;
+
+    if (isset($connection_options['port'])) {
+      $db_url .= ':' . $connection_options['port'];
+    }
+
+    $db_url .= '/' . $connection_options['database'];
+
+    if (isset($connection_options['prefix']['default']) && $connection_options['prefix']['default'] !== '') {
+      $db_url .= '#' . $connection_options['prefix']['default'];
+    }
+
+    return $db_url;
   }
 
 }

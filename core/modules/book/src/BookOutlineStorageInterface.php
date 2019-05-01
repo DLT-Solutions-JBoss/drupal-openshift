@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\book\BookOutlineStorageInterface.
-*/
-
 namespace Drupal\book;
 
 /**
@@ -54,7 +49,6 @@ interface BookOutlineStorageInterface {
    *
    * @param array $book_link
    *   The book link.
-   *
    * @param int $max_depth
    *   The maximum supported depth of the book tree.
    *
@@ -75,7 +69,7 @@ interface BookOutlineStorageInterface {
   public function delete($nid);
 
   /**
-   * Loads book's children using it's parent ID.
+   * Loads book's children using its parent ID.
    *
    * @param int $pid
    *   The book's parent ID.
@@ -115,7 +109,6 @@ interface BookOutlineStorageInterface {
    *   The last insert ID of the query, if one exists.
    */
   public function insert($link, $parents);
-
 
   /**
    * Updates book reference for links that were moved between books.
@@ -171,4 +164,5 @@ interface BookOutlineStorageInterface {
    *   Array of unordered subtree book items.
    */
   public function getBookSubtree($link, $max_depth);
+
 }

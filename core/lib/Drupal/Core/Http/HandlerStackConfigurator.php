@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Http\HandlerStackConfigurator.
- */
-
 namespace Drupal\Core\Http;
 
 use GuzzleHttp\HandlerStack;
@@ -48,7 +43,7 @@ class HandlerStackConfigurator {
   protected $container;
 
   /**
-   * Contructs a new HandlerStackConfigurator object.
+   * Constructs a new HandlerStackConfigurator object.
    *
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    *   The service container.

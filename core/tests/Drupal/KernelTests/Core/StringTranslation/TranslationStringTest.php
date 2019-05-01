@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\KernelTests\Core\StringTranslation\TranslationStringTest.
- */
-
 namespace Drupal\KernelTests\Core\StringTranslation;
 
 use Drupal\Core\Site\Settings;
@@ -24,7 +19,7 @@ class TranslationStringTest extends KernelTestBase {
    * @var array
    */
   public static $modules = [
-    'language'
+    'language',
   ];
 
   /**

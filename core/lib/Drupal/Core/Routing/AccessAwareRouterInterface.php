@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Core\Routing\AccessAwareRouterInterface.
- */
 
 namespace Drupal\Core\Routing;
 
@@ -27,7 +23,6 @@ interface AccessAwareRouterInterface extends RouterInterface, RequestMatcherInte
    *   Thrown when access checking failed.
    */
   public function matchRequest(Request $request);
-
 
   /**
    * {@inheritdoc}

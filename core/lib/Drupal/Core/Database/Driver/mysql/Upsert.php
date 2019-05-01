@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Database\Driver\mysql\Upsert.
- */
-
 namespace Drupal\Core\Database\Driver\mysql;
 
 use Drupal\Core\Database\Query\Upsert as QueryUpsert;
@@ -23,6 +18,9 @@ class Upsert extends QueryUpsert {
 
     // Default fields are always placed first for consistency.
     $insert_fields = array_merge($this->defaultFields, $this->insertFields);
+    $insert_fields = array_map(function ($field) {
+      return $this->connection->escapeField($field);
+    }, $insert_fields);
 
     $query = $comments . 'INSERT INTO {' . $this->table . '} (' . implode(', ', $insert_fields) . ') VALUES ';
 

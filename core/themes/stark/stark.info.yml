@@ -1,13 +1,13 @@
 name: Stark
 type: theme
-description: 'An intentionally plain theme with no styling to demonstrate default Drupal’s HTML and CSS. Learn how to build a custom theme from Stark in the <a href="https://www.drupal.org/theme-guide">Theming Guide</a>.'
+description: 'An intentionally plain theme with no styling to demonstrate default Drupal’s HTML and CSS. Learn how to build a custom theme from Stark in the <a href="https://www.drupal.org/docs/8/theming">Theming Guide</a>.'
 package: Core
 # version: VERSION
 # core: 8.x
 base theme: false
 
-# Information added by Drupal.org packaging script on 2015-11-19
-version: '8.0.0'
+# Information added by Drupal.org packaging script on 2019-04-17
+version: '8.6.15'
 core: '8.x'
 project: 'drupal'
-datestamp: 1447942689
+datestamp: 1555533461

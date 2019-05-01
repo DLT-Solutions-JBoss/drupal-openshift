@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\StringTranslation\TranslationManager.
- */
-
 namespace Drupal\Core\StringTranslation;
 
 use Drupal\Core\Language\LanguageDefault;
@@ -16,20 +11,24 @@ use Drupal\Core\StringTranslation\Translator\TranslatorInterface;
 class TranslationManager implements TranslationInterface, TranslatorInterface {
 
   /**
-   * An array of active translators keyed by priority.
+   * An unsorted array of arrays of active translators.
    *
-   * @var array
-   *   Array of \Drupal\Core\StringTranslation\Translator\TranslatorInterface objects
+   * An associative array. The keys are integers that indicate priority. Values
+   * are arrays of TranslatorInterface objects.
+   *
+   * @var \Drupal\Core\StringTranslation\Translator\TranslatorInterface[][]
+   *
+   * @see \Drupal\Core\StringTranslation\TranslationManager::addTranslator()
+   * @see \Drupal\Core\StringTranslation\TranslationManager::sortTranslators()
    */
-  protected $translators = array();
+  protected $translators = [];
 
   /**
-   * Holds the array of translators sorted by priority.
+   * An array of translators, sorted by priority.
    *
    * If this is NULL a rebuild will be triggered.
    *
-   * @var array
-   *   An array of path processor objects.
+   * @var null|\Drupal\Core\StringTranslation\Translator\TranslatorInterface[]
    *
    * @see \Drupal\Core\StringTranslation\TranslationManager::addTranslator()
    * @see \Drupal\Core\StringTranslation\TranslationManager::sortTranslators()
@@ -62,8 +61,7 @@ class TranslationManager implements TranslationInterface, TranslatorInterface {
    * @param int $priority
    *   The priority of the logger being added.
    *
-   * @return \Drupal\Core\StringTranslation\TranslationManager
-   *   The called object.
+   * @return $this
    */
   public function addTranslator(TranslatorInterface $translator, $priority = 0) {
     $this->translators[$priority][] = $translator;
@@ -75,11 +73,11 @@ class TranslationManager implements TranslationInterface, TranslatorInterface {
   /**
    * Sorts translators according to priority.
    *
-   * @return array
-   *   A sorted array of translators objects.
+   * @return \Drupal\Core\StringTranslation\Translator\TranslatorInterface[]
+   *   A sorted array of translator objects.
    */
   protected function sortTranslators() {
-    $sorted = array();
+    $sorted = [];
     krsort($this->translators);
 
     foreach ($this->translators as $translators) {
@@ -108,7 +106,7 @@ class TranslationManager implements TranslationInterface, TranslatorInterface {
   /**
    * {@inheritdoc}
    */
-  public function translate($string, array $args = array(), array $options = array()) {
+  public function translate($string, array $args = [], array $options = []) {
     return new TranslatableMarkup($string, $args, $options, $this);
   }
 
@@ -133,7 +131,7 @@ class TranslationManager implements TranslationInterface, TranslatorInterface {
    * @return string
    *   The translated string.
    */
-  protected function doTranslate($string, array $options = array()) {
+  protected function doTranslate($string, array $options = []) {
     // If a NULL langcode has been provided, unset it.
     if (!isset($options['langcode']) && array_key_exists('langcode', $options)) {
       unset($options['langcode']);
@@ -151,7 +149,7 @@ class TranslationManager implements TranslationInterface, TranslatorInterface {
   /**
    * {@inheritdoc}
    */
-  public function formatPlural($count, $singular, $plural, array $args = array(), array $options = array()) {
+  public function formatPlural($count, $singular, $plural, array $args = [], array $options = []) {
     return new PluralTranslatableMarkup($count, $singular, $plural, $args, $options, $this);
   }
 

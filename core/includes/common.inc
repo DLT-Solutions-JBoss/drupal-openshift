@@ -14,10 +14,9 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SortArray;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Render\Element\Link;
 use Drupal\Core\Render\Markup;
-use Drupal\Core\Render\Renderer;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\Core\PhpStorage\PhpStorageFactory;
 use Drupal\Core\StringTranslation\PluralTranslatableMarkup;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Render\Element;
@@ -47,7 +46,7 @@ use Drupal\Core\Render\Element;
  *
  * Correct:
  * @code
- *   $my_substring = Unicode::substr($original_string, 0, 5);
+ *   $my_substring = mb_substr($original_string, 0, 5);
  * @endcode
  *
  * @}
@@ -133,7 +132,7 @@ const JS_THEME = 100;
 const LOCALE_PLURAL_DELIMITER = PluralTranslatableMarkup::DELIMITER;
 
 /**
- * Prepares a 'destination' URL query parameter for use with url().
+ * Prepares a 'destination' URL query parameter.
  *
  * Used to direct the user back to the referring page after completing a form.
  * By default the current URL is returned. If a destination exists in the
@@ -148,12 +147,13 @@ const LOCALE_PLURAL_DELIMITER = PluralTranslatableMarkup::DELIMITER;
  *     If the query parameter isn't present, then the URL of the current
  *     request is returned.
  *
- * @see \Drupal\Core\EventSubscriber\RedirectResponseSubscriber::checkRedirectUrl()
- *
  * @ingroup form_api
  *
  * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0.
  *   Use the redirect.destination service.
+ *
+ * @see \Drupal\Core\EventSubscriber\RedirectResponseSubscriber::checkRedirectUrl()
+ * @see https://www.drupal.org/node/2448603
  */
 function drupal_get_destination() {
   return \Drupal::destination()->getAsArray();
@@ -176,6 +176,8 @@ function drupal_get_destination() {
  *
  * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0.
  *   Use \Drupal::service('email.validator')->isValid().
+ *
+ * @see https://www.drupal.org/node/2912661
  */
 function valid_email_address($mail) {
   return \Drupal::service('email.validator')->isValid($mail);
@@ -209,18 +211,18 @@ function valid_email_address($mail) {
  *   Drupal\Core\Template\Attribute, call
  *   \Drupal\Component\Utility\UrlHelper::stripDangerousProtocols() instead.
  *
- * @see \Drupal\Component\Utility\UrlHelper::stripDangerousProtocols()
- * @see \Drupal\Component\Utility\UrlHelper::filterBadProtocol()
- *
  * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0.
  *   Use UrlHelper::stripDangerousProtocols() or UrlHelper::filterBadProtocol()
  *   instead. UrlHelper::stripDangerousProtocols() can be used in conjunction
- *   with \Drupal\Component\Utility\SafeMarkup::format() and an @variable
+ *   with \Drupal\Component\Render\FormattableMarkup and an @variable
  *   placeholder which will perform the necessary escaping.
  *   UrlHelper::filterBadProtocol() is functionality equivalent to check_url()
  *   apart from the fact it is protected from double escaping bugs. Note that
  *   this method no longer marks its output as safe.
  *
+ * @see \Drupal\Component\Utility\UrlHelper::stripDangerousProtocols()
+ * @see \Drupal\Component\Utility\UrlHelper::filterBadProtocol()
+ * @see https://www.drupal.org/node/2560027
  */
 function check_url($uri) {
   return Html::escape(UrlHelper::stripDangerousProtocols($uri));
@@ -249,40 +251,45 @@ function check_url($uri) {
  *   A translated string representation of the size.
  */
 function format_size($size, $langcode = NULL) {
-  if ($size < Bytes::KILOBYTE) {
-    return \Drupal::translation()->formatPlural($size, '1 byte', '@count bytes', array(), array('langcode' => $langcode));
+  $absolute_size = abs($size);
+  if ($absolute_size < Bytes::KILOBYTE) {
+    return \Drupal::translation()->formatPlural($size, '1 byte', '@count bytes', [], ['langcode' => $langcode]);
   }
-  else {
-    $size = $size / Bytes::KILOBYTE; // Convert bytes to kilobytes.
-    $units = ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    foreach ($units as $unit) {
-      if (round($size, 2) >= Bytes::KILOBYTE) {
-        $size = $size / Bytes::KILOBYTE;
-      }
-      else {
-        break;
-      }
+  // Create a multiplier to preserve the sign of $size.
+  $sign = $absolute_size / $size;
+  foreach (['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] as $unit) {
+    $absolute_size /= Bytes::KILOBYTE;
+    $rounded_size = round($absolute_size, 2);
+    if ($rounded_size < Bytes::KILOBYTE) {
+      break;
     }
-    $args = ['@size' => round($size, 2)];
-    $options = ['langcode' => $langcode];
-    switch ($unit) {
-      case 'KB':
-        return new TranslatableMarkup('@size KB', $args, $options);
-      case 'MB':
-        return new TranslatableMarkup('@size MB', $args, $options);
-      case 'GB':
-        return new TranslatableMarkup('@size GB', $args, $options);
-      case 'TB':
-        return new TranslatableMarkup('@size TB', $args, $options);
-      case 'PB':
-        return new TranslatableMarkup('@size PB', $args, $options);
-      case 'EB':
-        return new TranslatableMarkup('@size EB', $args, $options);
-      case 'ZB':
-        return new TranslatableMarkup('@size ZB', $args, $options);
-      case 'YB':
-        return new TranslatableMarkup('@size YB', $args, $options);
-    }
+  }
+  $args = ['@size' => $rounded_size * $sign];
+  $options = ['langcode' => $langcode];
+  switch ($unit) {
+    case 'KB':
+      return new TranslatableMarkup('@size KB', $args, $options);
+
+    case 'MB':
+      return new TranslatableMarkup('@size MB', $args, $options);
+
+    case 'GB':
+      return new TranslatableMarkup('@size GB', $args, $options);
+
+    case 'TB':
+      return new TranslatableMarkup('@size TB', $args, $options);
+
+    case 'PB':
+      return new TranslatableMarkup('@size PB', $args, $options);
+
+    case 'EB':
+      return new TranslatableMarkup('@size EB', $args, $options);
+
+    case 'ZB':
+      return new TranslatableMarkup('@size ZB', $args, $options);
+
+    case 'YB':
+      return new TranslatableMarkup('@size YB', $args, $options);
   }
 }
 
@@ -315,10 +322,11 @@ function format_size($size, $langcode = NULL) {
  * @return
  *   A translated date string in the requested format.
  *
- * @see \Drupal\Core\Datetime\DateFormatter::format()
- *
  * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
  *   Use \Drupal::service('date.formatter')->format().
+ *
+ * @see \Drupal\Core\Datetime\DateFormatter::format()
+ * @see https://www.drupal.org/node/1876852
  */
 function format_date($timestamp, $type = 'medium', $format = '', $timezone = NULL, $langcode = NULL) {
   return \Drupal::service('date.formatter')->format($timestamp, $type, $format, $timezone, $langcode);
@@ -353,7 +361,7 @@ function date_iso8601($date) {
  *   A ; separated string ready for insertion in a HTTP header. No escaping is
  *   performed for HTML entities, so this string is not safe to be printed.
  */
-function drupal_http_header_attributes(array $attributes = array()) {
+function drupal_http_header_attributes(array $attributes = []) {
   foreach ($attributes as $attribute => &$data) {
     if (is_array($data)) {
       $data = implode(' ', $data);
@@ -404,8 +412,8 @@ function drupal_set_time_limit($time_limit) {
 /**
  * Returns the base URL path (i.e., directory) of the Drupal installation.
  *
- * base_path() adds a "/" to the beginning and end of the returned path if the
- * path is not empty. At the very least, this will return "/".
+ * Function base_path() adds a "/" to the beginning and end of the returned path
+ * if the path is not empty. At the very least, this will return "/".
  *
  * Examples:
  * - http://example.com returns "/" because the path is empty.
@@ -420,6 +428,8 @@ function base_path() {
  *
  * @deprecated in Drupal 8.x, will be removed before Drupal 9.0.
  *   Use \Drupal\Core\Asset\AssetCollectionOptimizerInterface::deleteAll().
+ *
+ * @see https://www.drupal.org/node/2317841
  */
 function drupal_clear_css_cache() {
   \Drupal::service('asset.css.collection_optimizer')->deleteAll();
@@ -434,18 +444,18 @@ function drupal_clear_css_cache() {
  * @see hook_js_alter()
  */
 function drupal_js_defaults($data = NULL) {
-  return array(
+  return [
     'type' => 'file',
     'group' => JS_DEFAULT,
     'weight' => 0,
     'scope' => 'header',
     'cache' => TRUE,
     'preprocess' => TRUE,
-    'attributes' => array(),
+    'attributes' => [],
     'version' => NULL,
     'data' => $data,
-    'browsers' => array(),
-  );
+    'browsers' => [],
+  ];
 }
 
 /**
@@ -484,7 +494,7 @@ function drupal_js_defaults($data = NULL) {
  *
  * Every condition is a key/value pair, whose key is a jQuery selector that
  * denotes another element on the page, and whose value is an array of
- * conditions, which must bet met on that element:
+ * conditions, which must be met on that element:
  * @code
  * array(
  *   'visible' => array(
@@ -578,7 +588,7 @@ function drupal_process_states(&$elements) {
   // element available, setting #attributes does not make sense, but a wrapper
   // is available, so setting #wrapper_attributes makes it work.
   $key = ($elements['#type'] == 'item') ? '#wrapper_attributes' : '#attributes';
-  $elements[$key]['data-drupal-states'] = JSON::encode($elements['#states']);
+  $elements[$key]['data-drupal-states'] = Json::encode($elements['#states']);
 }
 
 /**
@@ -601,7 +611,7 @@ function drupal_process_states(&$elements) {
  *     'id' => 'my-module-table',
  *   ),
  * );
- * return drupal_render($table);
+ * return \Drupal::service('renderer')->render($table);
  * @endcode
  *
  * In the theme function for the form, a special class must be added to each
@@ -705,12 +715,12 @@ function drupal_process_states(&$elements) {
  */
 function drupal_attach_tabledrag(&$element, array $options) {
   // Add default values to elements.
-  $options = $options + array(
+  $options = $options + [
     'subgroup' => NULL,
     'source' => NULL,
     'hidden' => TRUE,
-    'limit' => 0
-  );
+    'limit' => 0,
+  ];
 
   $group = $options['group'];
 
@@ -720,14 +730,14 @@ function drupal_attach_tabledrag(&$element, array $options) {
   // If a subgroup or source isn't set, assume it is the same as the group.
   $target = isset($options['subgroup']) ? $options['subgroup'] : $group;
   $source = isset($options['source']) ? $options['source'] : $target;
-  $element['#attached']['drupalSettings']['tableDrag'][$options['table_id']][$group][$tabledrag_id] = array(
+  $element['#attached']['drupalSettings']['tableDrag'][$options['table_id']][$group][$tabledrag_id] = [
     'target' => $target,
     'source' => $source,
     'relationship' => $options['relationship'],
     'action' => $options['action'],
     'hidden' => $options['hidden'],
     'limit' => $options['limit'],
-  );
+  ];
 
   $element['#attached']['library'][] = 'core/drupal.tabledrag';
 }
@@ -737,6 +747,8 @@ function drupal_attach_tabledrag(&$element, array $options) {
  *
  * @deprecated in Drupal 8.x, will be removed before Drupal 9.0.
  *   Use \Drupal\Core\Asset\AssetCollectionOptimizerInterface::deleteAll().
+ *
+ * @see https://www.drupal.org/node/2317841
  */
 function drupal_clear_js_cache() {
   \Drupal::service('asset.js.collection_optimizer')->deleteAll();
@@ -749,7 +761,7 @@ function drupal_clear_js_cache() {
  *   Use \Drupal\Core\Render\Element\Link::preRenderLink().
  */
 function drupal_pre_render_link($element) {
-  return Element\Link::preRenderLink($element);
+  return Link::preRenderLink($element);
 }
 
 /**
@@ -828,7 +840,7 @@ function drupal_pre_render_link($element) {
  * properties of the parent are used.
  */
 function drupal_pre_render_links($element) {
-  $element += array('#links' => array(), '#attached' => array());
+  $element += ['#links' => [], '#attached' => []];
   foreach (Element::children($element) as $key) {
     $child = &$element[$key];
     // If the child has links which have not been printed yet and the user has
@@ -854,6 +866,7 @@ function drupal_pre_render_links($element) {
  *   'renderer' service instead.
  *
  * @see \Drupal\Core\Render\RendererInterface::renderRoot()
+ * @see https://www.drupal.org/node/2912696
  */
 function drupal_render_root(&$elements) {
   return \Drupal::service('renderer')->renderRoot($elements);
@@ -866,6 +879,7 @@ function drupal_render_root(&$elements) {
  *   'renderer' service instead.
  *
  * @see \Drupal\Core\Render\RendererInterface::render()
+ * @see https://www.drupal.org/node/2912696
  */
 function drupal_render(&$elements, $is_recursive_call = FALSE) {
   return \Drupal::service('renderer')->render($elements, $is_recursive_call);
@@ -888,7 +902,8 @@ function drupal_render(&$elements, $is_recursive_call = FALSE) {
  *   rendering when possible or loop through the elements and render them as
  *   they are available.
  *
- * @see drupal_render()
+ * @see \Drupal\Core\Render\RendererInterface::render()
+ * @see https://www.drupal.org/node/2912757
  */
 function drupal_render_children(&$element, $children_keys = NULL) {
   if ($children_keys === NULL) {
@@ -897,7 +912,7 @@ function drupal_render_children(&$element, $children_keys = NULL) {
   $output = '';
   foreach ($children_keys as $key) {
     if (!empty($element[$key])) {
-      $output .= drupal_render($element[$key]);
+      $output .= \Drupal::service('renderer')->render($element[$key]);
     }
   }
   return Markup::create($output);
@@ -1002,6 +1017,8 @@ function show(&$element) {
  *
  * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
  *   Use \Drupal::service('element_info')->getInfo() instead.
+ *
+ * @see https://www.drupal.org/node/2235461
  */
 function element_info($type) {
   return \Drupal::service('element_info')->getInfo($type);
@@ -1020,6 +1037,8 @@ function element_info($type) {
  *
  * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
  *   Use \Drupal::service('element_info')->getInfoProperty() instead.
+ *
+ * @see https://www.drupal.org/node/2235461
  */
 function element_info_property($type, $property_name, $default = NULL) {
   return \Drupal::service('element_info')->getInfoProperty($type, $property_name, $default);
@@ -1101,7 +1120,7 @@ function drupal_flush_all_caches() {
   \Drupal::service('kernel')->invalidateContainer();
 
   // Wipe the Twig PHP Storage cache.
-  PhpStorageFactory::get('twig')->deleteAll();
+  \Drupal::service('twig')->invalidate();
 
   // Rebuild module and theme data.
   $module_data = system_rebuild_module_data();
@@ -1112,11 +1131,10 @@ function drupal_flush_all_caches() {
   // to reset the theme manager.
   \Drupal::theme()->resetActiveTheme();
 
-
   // Rebuild and reboot a new kernel. A simple DrupalKernel reboot is not
   // sufficient, since the list of enabled modules might have been adjusted
   // above due to changed code.
-  $files = array();
+  $files = [];
   foreach ($module_data as $name => $extension) {
     if ($extension->status) {
       $files[$name] = $extension;
@@ -1218,7 +1236,7 @@ function drupal_check_incompatibility($v, $current_version) {
  *   validation system.
  */
 function archiver_get_extensions() {
-  $valid_extensions = array();
+  $valid_extensions = [];
   foreach (\Drupal::service('plugin.manager.archiver')->getDefinitions() as $archive) {
     foreach ($archive['extensions'] as $extension) {
       foreach (explode('.', $extension) as $part) {
@@ -1245,11 +1263,11 @@ function archiver_get_extensions() {
  */
 function archiver_get_archiver($file) {
   // Archivers can only work on local paths
-  $filepath = drupal_realpath($file);
+  $filepath = \Drupal::service('file_system')->realpath($file);
   if (!is_file($filepath)) {
-    throw new Exception(t('Archivers can only operate on local files: %file not supported', array('%file' => $file)));
+    throw new Exception(t('Archivers can only operate on local files: %file not supported', ['%file' => $file]));
   }
-  return \Drupal::service('plugin.manager.archiver')->getInstance(array('filepath' => $filepath));
+  return \Drupal::service('plugin.manager.archiver')->getInstance(['filepath' => $filepath]);
 }
 
 /**
@@ -1271,7 +1289,7 @@ function drupal_get_updaters() {
   if (!isset($updaters)) {
     $updaters = \Drupal::moduleHandler()->invokeAll('updater_info');
     \Drupal::moduleHandler()->alter('updater_info', $updaters);
-    uasort($updaters, array('Drupal\Component\Utility\SortArray', 'sortByWeightElement'));
+    uasort($updaters, [SortArray::class, 'sortByWeightElement']);
   }
   return $updaters;
 }
@@ -1291,7 +1309,7 @@ function drupal_get_filetransfer_info() {
   if (!isset($info)) {
     $info = \Drupal::moduleHandler()->invokeAll('filetransfer_info');
     \Drupal::moduleHandler()->alter('filetransfer_info', $info);
-    uasort($info, array('Drupal\Component\Utility\SortArray', 'sortByWeightElement'));
+    uasort($info, [SortArray::class, 'sortByWeightElement']);
   }
   return $info;
 }

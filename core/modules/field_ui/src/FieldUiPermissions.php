@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\field_ui\FieldUiPermissions.
- */
-
 namespace Drupal\field_ui;
 
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
@@ -60,10 +55,10 @@ class FieldUiPermissions implements ContainerInjectionInterface {
           'restrict access' => TRUE,
         ];
         $permissions['administer ' . $entity_type_id . ' form display'] = [
-          'title' => $this->t('%entity_label: Administer form display', ['%entity_label' => $entity_type->getLabel()])
+          'title' => $this->t('%entity_label: Administer form display', ['%entity_label' => $entity_type->getLabel()]),
         ];
         $permissions['administer ' . $entity_type_id . ' display'] = [
-          'title' => $this->t('%entity_label: Administer display', ['%entity_label' => $entity_type->getLabel()])
+          'title' => $this->t('%entity_label: Administer display', ['%entity_label' => $entity_type->getLabel()]),
         ];
       }
     }

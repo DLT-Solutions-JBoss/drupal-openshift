@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Field\FieldItemListInterface.
- */
-
 namespace Drupal\Core\Field;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -27,13 +22,15 @@ use Drupal\Core\TypedData\ListInterface;
  *
  * When implementing this interface which extends Traversable, make sure to list
  * IteratorAggregate or Iterator before this interface in the implements clause.
+ *
+ * @see \Drupal\Core\Field\FieldItemInterface
  */
 interface FieldItemListInterface extends ListInterface, AccessibleInterface {
 
   /**
    * Gets the entity that field belongs to.
    *
-   * @return \Drupal\Core\Entity\EntityInterface
+   * @return \Drupal\Core\Entity\FieldableEntityInterface
    *   The entity object.
    */
   public function getEntity();
@@ -49,7 +46,7 @@ interface FieldItemListInterface extends ListInterface, AccessibleInterface {
   /**
    * Gets the langcode of the field values held in the object.
    *
-   * @return $langcode
+   * @return string
    *   The langcode.
    */
   public function getLangcode();
@@ -102,28 +99,28 @@ interface FieldItemListInterface extends ListInterface, AccessibleInterface {
   /**
    * Magic method: Gets a property value of to the first field item.
    *
-   * @see \Drupal\Core\Field\FieldItemInterface::__get()
+   * @see \Drupal\Core\Field\FieldItemInterface::__set()
    */
   public function __get($property_name);
 
   /**
    * Magic method: Sets a property value of the first field item.
    *
-   * @see \Drupal\Core\Field\FieldItemInterface::__set()
+   * @see \Drupal\Core\Field\FieldItemInterface::__get()
    */
   public function __set($property_name, $value);
 
   /**
    * Magic method: Determines whether a property of the first field item is set.
    *
-   * @see \Drupal\Core\Field\FieldItemInterface::__isset()
+   * @see \Drupal\Core\Field\FieldItemInterface::__unset()
    */
   public function __isset($property_name);
 
   /**
    * Magic method: Unsets a property of the first field item.
    *
-   * @see \Drupal\Core\Field\FieldItemInterface::__unset()
+   * @see \Drupal\Core\Field\FieldItemInterface::__isset()
    */
   public function __unset($property_name);
 
@@ -184,9 +181,9 @@ interface FieldItemListInterface extends ListInterface, AccessibleInterface {
    * @see \Drupal\Core\Entity\EntityViewBuilderInterface::viewField()
    * @see \Drupal\Core\Field\FieldItemInterface::view()
    */
-  public function view($display_options = array());
+  public function view($display_options = []);
 
-  /*
+  /**
    * Populates a specified number of field items with valid sample data.
    *
    * @param int $count
@@ -250,7 +247,7 @@ interface FieldItemListInterface extends ListInterface, AccessibleInterface {
    * in order to be a valid runtime value for the field type; e.g., a date field
    * could process the defined value of 'NOW' to a valid date.
    *
-   * @param array
+   * @param array $default_value
    *   The unprocessed default value defined for the field, as a numerically
    *   indexed array of items, each item being an array of property/value pairs.
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
@@ -266,6 +263,9 @@ interface FieldItemListInterface extends ListInterface, AccessibleInterface {
   /**
    * Determines equality to another object implementing FieldItemListInterface.
    *
+   * This method is usually used by the storage to check for not computed
+   * value changes, which will be saved into the storage.
+   *
    * @param \Drupal\Core\Field\FieldItemListInterface $list_to_compare
    *   The field item list to compare to.
    *
@@ -273,5 +273,25 @@ interface FieldItemListInterface extends ListInterface, AccessibleInterface {
    *   TRUE if the field item lists are equal, FALSE if not.
    */
   public function equals(FieldItemListInterface $list_to_compare);
+
+  /**
+   * Determines whether the field has relevant changes.
+   *
+   * This is for example used to determine if a revision of an entity has
+   * changes in a given translation. Unlike
+   * \Drupal\Core\Field\FieldItemListInterface::equals(), this can report
+   * that for example an untranslatable field, despite being changed and
+   * therefore technically affecting all translations, is only internal metadata
+   * or only affects a single translation.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $original_items
+   *   The original field items to compare against.
+   * @param string $langcode
+   *   The language that should be checked.
+   *
+   * @return bool
+   *   TRUE if the field has relevant changes, FALSE if not.
+   */
+  public function hasAffectingChanges(FieldItemListInterface $original_items, $langcode);
 
 }

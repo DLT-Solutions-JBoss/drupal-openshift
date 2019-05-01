@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\KernelTests\Core\Entity\RouteProviderTest.
- */
-
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\entity_test\Entity\EntityTestAdminRoutes;
@@ -36,18 +31,10 @@ class RouteProviderTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('entity_test_mul');
     $this->installEntitySchema('entity_test_admin_routes');
-    $this->installSchema('system', 'router');
-
-    $router_builder = \Drupal::service('router.builder');
-    $router_builder->rebuild();
-
-    /** @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
-    $router_builder = \Drupal::service('router.builder');
-    $router_builder->rebuild();
 
     /** @var \Drupal\user\RoleInterface $role */
     $role = Role::create([
-      'id' => RoleInterface::ANONYMOUS_ID
+      'id' => RoleInterface::ANONYMOUS_ID,
     ]);
     $role
       ->grantPermission('administer entity_test content')

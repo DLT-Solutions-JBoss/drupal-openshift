@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\views\Plugin\views\cache\None.
- */
-
 namespace Drupal\views\Plugin\views\cache;
 
 /**
@@ -23,7 +18,6 @@ class None extends CachePluginBase {
   public function summaryTitle() {
     return $this->t('None');
   }
-
 
   /**
    * Overrides \Drupal\views\Plugin\views\cache\CachePluginBase::cacheGet().

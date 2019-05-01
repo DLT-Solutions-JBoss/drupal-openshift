@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\GeneratedLink.
- */
-
 namespace Drupal\Core;
 
 use Drupal\Component\Render\MarkupInterface;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Render\BubbleableMetadata;
 
 /**
@@ -18,6 +12,11 @@ use Drupal\Core\Render\BubbleableMetadata;
  *   ungenerated links (typically link text + route name + route parameters).
  */
 class GeneratedLink extends BubbleableMetadata implements MarkupInterface, \Countable {
+
+  /**
+   * HTML tag to use when building the link.
+   */
+  const TAG = 'a';
 
   /**
    * The HTML string value containing a link.
@@ -32,7 +31,7 @@ class GeneratedLink extends BubbleableMetadata implements MarkupInterface, \Coun
    * @return string
    */
   public function getGeneratedLink() {
-    return $this->generatedLink ;
+    return $this->generatedLink;
   }
 
   /**
@@ -66,7 +65,7 @@ class GeneratedLink extends BubbleableMetadata implements MarkupInterface, \Coun
    * {@inheritdoc}
    */
   public function count() {
-    return Unicode::strlen($this->__toString());
+    return mb_strlen($this->__toString());
   }
 
 }

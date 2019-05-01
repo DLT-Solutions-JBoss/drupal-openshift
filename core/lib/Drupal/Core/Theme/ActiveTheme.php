@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Theme\ActiveTheme.
- */
-
 namespace Drupal\Core\Theme;
 
 /**
@@ -23,6 +18,13 @@ class ActiveTheme {
    * @var string
    */
   protected $name;
+
+  /**
+   * The path to the logo.
+   *
+   * @var string
+   */
+  protected $logo;
 
   /**
    * The path to the theme.
@@ -88,6 +90,13 @@ class ActiveTheme {
   protected $librariesOverride;
 
   /**
+   * The list of libraries-extend definitions.
+   *
+   * @var array
+   */
+  protected $librariesExtend;
+
+  /**
    * Constructs an ActiveTheme object.
    *
    * @param array $values
@@ -98,6 +107,7 @@ class ActiveTheme {
       'path' => '',
       'engine' => 'twig',
       'owner' => 'twig',
+      'logo' => '',
       'stylesheets_remove' => [],
       'libraries' => [],
       'extension' => 'html.twig',
@@ -108,6 +118,7 @@ class ActiveTheme {
     ];
 
     $this->name = $values['name'];
+    $this->logo = $values['logo'];
     $this->path = $values['path'];
     $this->engine = $values['engine'];
     $this->owner = $values['owner'];
@@ -182,6 +193,8 @@ class ActiveTheme {
    * @return mixed
    *
    * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
+   *
+   * @see https://www.drupal.org/node/2497313
    */
   public function getStyleSheetsRemove() {
     return $this->styleSheetsRemove;
@@ -197,6 +210,16 @@ class ActiveTheme {
    */
   public function getBaseThemes() {
     return $this->baseThemes;
+  }
+
+  /**
+   * Returns the logo provided by the theme.
+   *
+   * @return string
+   *   The logo path.
+   */
+  public function getLogo() {
+    return $this->logo;
   }
 
   /**

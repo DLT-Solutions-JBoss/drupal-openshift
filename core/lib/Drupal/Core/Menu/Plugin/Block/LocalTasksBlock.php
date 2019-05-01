@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Menu\Plugin\Block\LocalTasksBlock.
- */
-
 namespace Drupal\Core\Menu\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
@@ -90,6 +85,7 @@ class LocalTasksBlock extends BlockBase implements ContainerFactoryPluginInterfa
   public function build() {
     $config = $this->configuration;
     $cacheability = new CacheableMetadata();
+    $cacheability->addCacheableDependency($this->localTaskManager);
     $tabs = [
       '#theme' => 'menu_local_tasks',
     ];

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\user\UserStorageSchema.
- */
-
 namespace Drupal\user;
 
 use Drupal\Core\Entity\ContentEntityTypeInterface;
@@ -22,9 +17,11 @@ class UserStorageSchema extends SqlContentEntityStorageSchema {
   protected function getEntitySchema(ContentEntityTypeInterface $entity_type, $reset = FALSE) {
     $schema = parent::getEntitySchema($entity_type, $reset);
 
-    $schema['users_field_data']['unique keys'] += array(
-      'user__name' => array('name', 'langcode'),
-    );
+    if ($data_table = $this->storage->getDataTable()) {
+      $schema[$data_table]['unique keys'] += [
+        'user__name' => ['name', 'langcode'],
+      ];
+    }
 
     return $schema;
   }

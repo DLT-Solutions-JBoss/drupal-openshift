@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Component\Diff\WordLevelDiff.
- */
-
 namespace Drupal\Component\Diff;
 
 use Drupal\Component\Diff\Engine\HWLDFWordAccumulator;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * @todo document
@@ -27,8 +21,8 @@ class WordLevelDiff extends MappedDiff {
   }
 
   protected function _split($lines) {
-    $words = array();
-    $stripped = array();
+    $words = [];
+    $stripped = [];
     $first = TRUE;
     foreach ($lines as $line) {
       // If the line is too long, just pretend the entire line is one big word
@@ -40,7 +34,7 @@ class WordLevelDiff extends MappedDiff {
         $words[] = "\n";
         $stripped[] = "\n";
       }
-      if (Unicode::strlen($line) > $this::MAX_LINE_LENGTH) {
+      if (mb_strlen($line) > $this::MAX_LINE_LENGTH) {
         $words[] = $line;
         $stripped[] = $line;
       }
@@ -51,7 +45,7 @@ class WordLevelDiff extends MappedDiff {
         }
       }
     }
-    return array($words, $stripped);
+    return [$words, $stripped];
   }
 
   public function orig() {
@@ -83,4 +77,5 @@ class WordLevelDiff extends MappedDiff {
     $lines = $closing->getLines();
     return $lines;
   }
+
 }

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\config_translation\FormElement\ElementInterface.
- */
-
 namespace Drupal\config_translation\FormElement;
 
 use Drupal\Core\Config\Config;
@@ -28,7 +23,7 @@ interface ElementInterface {
   public static function create(TypedDataInterface $schema);
 
   /**
-   * Builds a render array containg the source and translation form elements.
+   * Builds a render array containing the source and translation form elements.
    *
    * @param \Drupal\Core\Language\LanguageInterface $source_language
    *   The source language of the configuration object.

@@ -1,17 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\accept_header_routing_test\AcceptHeaderMiddleware.
- */
-
 namespace Drupal\accept_header_routing_test;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
- * Example implementation of accept header based content negotation.
+ * Example implementation of "accept header"-based content negotiation.
  */
 class AcceptHeaderMiddleware implements HttpKernelInterface {
 

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\block\Controller\BlockListController.
- */
-
 namespace Drupal\block\Controller;
 
 use Drupal\Core\Entity\Controller\EntityListController;
@@ -53,7 +48,8 @@ class BlockListController extends EntityListController {
    *   The current request.
    *
    * @return array
-   *   A render array as expected by drupal_render().
+   *   A render array as expected by
+   *   \Drupal\Core\Render\RendererInterface::render().
    */
   public function listing($theme = NULL, Request $request = NULL) {
     $theme = $theme ?: $this->config('system.theme')->get('default');

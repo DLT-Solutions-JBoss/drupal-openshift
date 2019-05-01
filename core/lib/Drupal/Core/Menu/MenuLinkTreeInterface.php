@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Menu\MenuLinkTreeInterface.
- */
-
 namespace Drupal\Core\Menu;
 
 /**
@@ -25,7 +20,7 @@ namespace Drupal\Core\Menu;
  *   a tree transformation, because menu links themselves are responsible
  *   for translation. Transformations are performed by "menu link tree
  *   manipulators", which are functions or methods; see
- *   \Drupal\menu_link\DefaultMenuTreeManipulators for examples.
+ *   \Drupal\Core\Menu\DefaultMenuLinkTreeManipulators for examples.
  * - Create a render array using MenuLinkTreeInterface::build().
  */
 interface MenuLinkTreeInterface {
@@ -35,7 +30,7 @@ interface MenuLinkTreeInterface {
    *
    * Builds menu link tree parameters that:
    * - Expand all links in the active trail based on route being viewed.
-   * - Expand the descendents of the links in the active trail whose
+   * - Expand the descendants of the links in the active trail whose
    *   'expanded' flag is enabled.
    *
    * This only sets the (relatively complex) parameters to achieve the two above

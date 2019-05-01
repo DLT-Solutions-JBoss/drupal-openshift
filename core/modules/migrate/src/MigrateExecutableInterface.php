@@ -1,13 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\migrate\MigrateExecutableInterface.
- */
-
 namespace Drupal\migrate;
 
-use Drupal\migrate\Entity\MigrationInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
 
 interface MigrateExecutableInterface {
 
@@ -34,7 +29,7 @@ interface MigrateExecutableInterface {
    *   Usually setting this is not necessary as $process typically starts with
    *   a 'get'. This is useful only when the $process contains a single
    *   destination and needs to access a value outside of the source. See
-   *   \Drupal\migrate\Plugin\migrate\process\Iterator::transformKey for an
+   *   \Drupal\migrate\Plugin\migrate\process\SubProcess::transformKey for an
    *   example.
    *
    * @throws \Drupal\migrate\MigrateException

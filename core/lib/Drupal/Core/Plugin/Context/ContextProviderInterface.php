@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Plugin\Context\ContextProviderInterface.
- */
-
 namespace Drupal\Core\Plugin\Context;
 
 /**
@@ -32,7 +27,7 @@ interface ContextProviderInterface {
    *   $node = ...
    *
    *   // Set that specific node as the value of the 'node' context.
-   *   $context = new Context(new ContextDefinition('entity:node'), $node);
+   *   $context = EntityContext::fromEntity($node);
    *   return ['node' => $context];
    * @endcode
    *
@@ -67,7 +62,7 @@ interface ContextProviderInterface {
    *   // can be configured to use it. When the plugin, for example a block,
    *   // needs to evaluate the context, the value of this context will be
    *   // supplied by getRuntimeContexts().
-   *   $context = new Context(new ContextDefinition('entity:node'));
+   *   $context = EntityContext::fromEntityTypeId('node');
    *   return ['node' => $context];
    * @endcode
    *

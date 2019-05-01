@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\config_translation\ConfigMapperInterface.
- */
-
 namespace Drupal\config_translation;
 
 use Drupal\Core\Language\LanguageInterface;
@@ -208,6 +203,17 @@ interface ConfigMapperInterface {
   public function getLangcode();
 
   /**
+   * Returns the language code of a configuration object given its name.
+   *
+   * @param string $config_name
+   *   The name of the configuration object.
+   *
+   * @return string
+   *   The language code of the configuration object.
+   */
+  public function getLangcodeFromConfig($config_name);
+
+  /**
    * Sets the original language code.
    *
    * @param string $langcode
@@ -276,12 +282,12 @@ interface ConfigMapperInterface {
   public function hasTranslation(LanguageInterface $language);
 
   /**
-   * Populate the config mapper with request data.
-   *
-   * @todo Replace $request with RouteMatch https://www.drupal.org/node/2295255.
+   * Populate the config mapper with route match data.
    *
    * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
    *   The route match.
+   *
+   * @see \Drupal\config_translation\Event\ConfigTranslationEvents::POPULATE_MAPPER
    */
   public function populateFromRouteMatch(RouteMatchInterface $route_match);
 

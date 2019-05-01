@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Session\AccountInterface.
- */
-
 namespace Drupal\Core\Session;
 
 /**
@@ -81,10 +76,12 @@ interface AccountInterface {
    *   language if the user has no language preference.
    *
    * @return string
-   *   The language code that is preferred by the account. If the preferred
-   *   language is not set or is a language not configured anymore on the site,
-   *   the site default is returned or an empty string is returned (if
-   *   $fallback_to_default is FALSE).
+   *   Returned language code depends upon following:
+   *   - The user preferred language code is returned if set in the account.
+   *   - If the user has no preferred language and $fallback_to_default is TRUE
+   *     then the site default language code is returned.
+   *   - If the user has no preferred language and $fallback_to_default is FALSE
+   *     then empty string is returned.
    */
   public function getPreferredLangcode($fallback_to_default = TRUE);
 
@@ -111,13 +108,15 @@ interface AccountInterface {
    * @return string
    *   An unsanitized plain-text string with the name of this account that is
    *   used to log in. Only display this name to admins and to the user who owns
-   *   this account, and only in the context of the name used to login. For
+   *   this account, and only in the context of the name used to log in. For
    *   any other display purposes, use
    *   \Drupal\Core\Session\AccountInterface::getDisplayName() instead.
    *
    * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
    *   Use \Drupal\Core\Session\AccountInterface::getAccountName() or
    *   \Drupal\user\UserInterface::getDisplayName() instead.
+   *
+   * @see https://www.drupal.org/node/2572493
    */
   public function getUsername();
 
@@ -153,8 +152,9 @@ interface AccountInterface {
   /**
    * Returns the email address of this account.
    *
-   * @return string
-   *   The email address.
+   * @return string|null
+   *   The email address, or NULL if the account is anonymous or the user does
+   *   not have an email address.
    */
   public function getEmail();
 

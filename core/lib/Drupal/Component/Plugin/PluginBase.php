@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Component\Plugin\PluginBase.
- */
 
 namespace Drupal\Component\Plugin;
 
@@ -45,7 +41,7 @@ abstract class PluginBase implements PluginInspectionInterface, DerivativeInspec
   protected $configuration;
 
   /**
-   * Constructs a Drupal\Component\Plugin\PluginBase object.
+   * Constructs a \Drupal\Component\Plugin\PluginBase object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -96,4 +92,5 @@ abstract class PluginBase implements PluginInspectionInterface, DerivativeInspec
   public function getPluginDefinition() {
     return $this->pluginDefinition;
   }
+
 }

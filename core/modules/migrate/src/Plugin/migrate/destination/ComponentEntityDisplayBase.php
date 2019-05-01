@@ -1,15 +1,20 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\migrate\Plugin\migrate\destination\ComponentEntityDisplayBase.
- */
-
 namespace Drupal\migrate\Plugin\migrate\destination;
 
-use Drupal\migrate\Entity\MigrationInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
 
+/**
+ * Provides a destination plugin for migrating entity display components.
+ *
+ * Display modes provide different presentations for viewing ('view modes') or
+ * editing ('form modes') content. This destination plugin is an abstract base
+ * class for migrating fields and other components into view and form modes.
+ *
+ * @see \Drupal\migrate\Plugin\migrate\destination\PerComponentEntityDisplay
+ * @see \Drupal\migrate\Plugin\migrate\destination\PerComponentEntityFormDisplay
+ */
 abstract class ComponentEntityDisplayBase extends DestinationBase {
 
   const MODE_NAME = '';
@@ -17,8 +22,8 @@ abstract class ComponentEntityDisplayBase extends DestinationBase {
   /**
    * {@inheritdoc}
    */
-  public function import(Row $row, array $old_destination_id_values = array()) {
-    $values = array();
+  public function import(Row $row, array $old_destination_id_values = []) {
+    $values = [];
     // array_intersect_key() won't work because the order is important because
     // this is also the return value.
     foreach (array_keys($this->getIds()) as $id) {
@@ -26,7 +31,7 @@ abstract class ComponentEntityDisplayBase extends DestinationBase {
     }
     $entity = $this->getEntity($values['entity_type'], $values['bundle'], $values[static::MODE_NAME]);
     if (!$row->getDestinationProperty('hidden')) {
-      $entity->setComponent($values['field_name'], $row->getDestinationProperty('options') ?: array());
+      $entity->setComponent($values['field_name'], $row->getDestinationProperty('options') ?: []);
     }
     else {
       $entity->removeComponent($values['field_name']);
@@ -54,7 +59,7 @@ abstract class ComponentEntityDisplayBase extends DestinationBase {
   }
 
   /**
-   * Get the entity.
+   * Gets the entity.
    *
    * @param string $entity_type
    *   The entity type to retrieve.
@@ -66,6 +71,6 @@ abstract class ComponentEntityDisplayBase extends DestinationBase {
    * @return \Drupal\Core\Entity\Display\EntityDisplayInterface
    *   The entity display object.
    */
-  protected abstract function getEntity($entity_type, $bundle, $mode);
+  abstract protected function getEntity($entity_type, $bundle, $mode);
 
 }

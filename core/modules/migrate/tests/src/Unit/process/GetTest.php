@@ -1,12 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\Tests\migrate\Unit\process\GetTest.
- */
 
 namespace Drupal\Tests\migrate\Unit\process;
 
-use Drupal\migrate\Plugin\migrate\process\TestGet;
+use Drupal\migrate\Plugin\migrate\process\Get;
 
 /**
  * Tests the get process plugin.
@@ -16,14 +12,6 @@ use Drupal\migrate\Plugin\migrate\process\TestGet;
 class GetTest extends MigrateProcessTestCase {
 
   /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    $this->plugin = new TestGet();
-    parent::setUp();
-  }
-
-  /**
    * Tests the Get plugin when source is a string.
    */
   public function testTransformSourceString() {
@@ -31,25 +19,27 @@ class GetTest extends MigrateProcessTestCase {
       ->method('getSourceProperty')
       ->with('test')
       ->will($this->returnValue('source_value'));
-    $this->plugin->setSource('test');
+    $this->plugin = new Get(['source' => 'test'], '', []);
     $value = $this->plugin->transform(NULL, $this->migrateExecutable, $this->row, 'destinationproperty');
-    $this->assertSame($value, 'source_value');
+    $this->assertSame('source_value', $value);
   }
 
   /**
    * Tests the Get plugin when source is an array.
    */
   public function testTransformSourceArray() {
-    $map = array(
+    $map = [
       'test1' => 'source_value1',
       'test2' => 'source_value2',
-    );
-    $this->plugin->setSource(array('test1', 'test2'));
+    ];
+    $this->plugin = new Get(['source' => ['test1', 'test2']], '', []);
     $this->row->expects($this->exactly(2))
       ->method('getSourceProperty')
-      ->will($this->returnCallback(function ($argument)  use ($map) { return $map[$argument]; } ));
+      ->will($this->returnCallback(function ($argument) use ($map) {
+        return $map[$argument];
+      }));
     $value = $this->plugin->transform(NULL, $this->migrateExecutable, $this->row, 'destinationproperty');
-    $this->assertSame($value, array('source_value1', 'source_value2'));
+    $this->assertSame(['source_value1', 'source_value2'], $value);
   }
 
   /**
@@ -60,36 +50,74 @@ class GetTest extends MigrateProcessTestCase {
       ->method('getSourceProperty')
       ->with('@test')
       ->will($this->returnValue('source_value'));
-    $this->plugin->setSource('@@test');
+    $this->plugin = new Get(['source' => '@@test'], '', []);
     $value = $this->plugin->transform(NULL, $this->migrateExecutable, $this->row, 'destinationproperty');
-    $this->assertSame($value, 'source_value');
+    $this->assertSame('source_value', $value);
   }
 
   /**
    * Tests the Get plugin when source is an array pointing to destination.
    */
   public function testTransformSourceArrayAt() {
-    $map = array(
+    $map = [
       'test1' => 'source_value1',
       '@test2' => 'source_value2',
       '@test3' => 'source_value3',
       'test4' => 'source_value4',
-    );
-    $this->plugin->setSource(array('test1', '@@test2', '@@test3', 'test4'));
+    ];
+    $this->plugin = new Get(['source' => ['test1', '@@test2', '@@test3', 'test4']], '', []);
     $this->row->expects($this->exactly(4))
       ->method('getSourceProperty')
-      ->will($this->returnCallback(function ($argument)  use ($map) { return $map[$argument]; } ));
+      ->will($this->returnCallback(function ($argument) use ($map) {
+        return $map[$argument];
+      }));
     $value = $this->plugin->transform(NULL, $this->migrateExecutable, $this->row, 'destinationproperty');
-    $this->assertSame($value, array('source_value1', 'source_value2', 'source_value3', 'source_value4'));
+    $this->assertSame(['source_value1', 'source_value2', 'source_value3', 'source_value4'], $value);
   }
-}
 
-namespace Drupal\migrate\Plugin\migrate\process;
+  /**
+   * Tests the Get plugin when source has integer values.
+   *
+   * @dataProvider integerValuesDataProvider
+   */
+  public function testIntegerValues($source, $expected_value) {
+    $this->row->expects($this->atMost(2))
+      ->method('getSourceProperty')
+      ->willReturnOnConsecutiveCalls('val1', 'val2');
 
-class TestGet extends Get {
-  public function __construct() {
+    $this->plugin = new Get(['source' => $source], '', []);
+    $return = $this->plugin->transform(NULL, $this->migrateExecutable, $this->row, 'destinationproperty');
+    $this->assertSame($expected_value, $return);
   }
-  public function setSource($source) {
-    $this->configuration['source'] = $source;
+
+  /**
+   * Provides data for the successful lookup test.
+   *
+   * @return array
+   */
+  public function integerValuesDataProvider() {
+    return [
+      [
+        'source' => [0 => 0, 1 => 'test'],
+        'expected_value' => [0 => 'val1', 1 => 'val2'],
+      ],
+      [
+        'source' => [FALSE],
+        'expected_value' => [NULL],
+      ],
+      [
+        'source' => [NULL],
+        'expected_value' => [NULL],
+      ],
+    ];
   }
+
+  /**
+   * Tests the Get plugin for syntax errors, e.g. "Invalid tag_line detected" by
+   * creating a prophecy of the class.
+   */
+  public function testPluginSyntax() {
+    $this->assertNotNull($this->prophesize(Get::class));
+  }
+
 }

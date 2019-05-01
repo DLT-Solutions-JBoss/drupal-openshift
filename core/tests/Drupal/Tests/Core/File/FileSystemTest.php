@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Core\File\FileSystemTest.
- */
-
 namespace Drupal\Tests\Core\File;
 
 use Drupal\Core\File\FileSystem;
@@ -20,7 +15,7 @@ use org\bovigo\vfs\vfsStream;
 class FileSystemTest extends UnitTestCase {
 
   /**
-   * @var \Drupal\Core\File\FileSystem
+   * @var \Drupal\Core\File\FileSystemInterface
    */
   protected $fileSystem;
 
@@ -124,7 +119,7 @@ class FileSystemTest extends UnitTestCase {
     $data[] = [
       'public://dir/test.txt',
       'test',
-      '.txt'
+      '.txt',
     ];
     return $data;
   }

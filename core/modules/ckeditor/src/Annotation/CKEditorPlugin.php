@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\ckeditor\Annotation\CKEditorPlugin.
- */
-
 namespace Drupal\ckeditor\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
@@ -19,6 +14,7 @@ use Drupal\Component\Annotation\Plugin;
  * @see \Drupal\ckeditor\CKEditorPluginInterface
  * @see \Drupal\ckeditor\CKEditorPluginBase
  * @see \Drupal\ckeditor\CKEditorPluginManager
+ * @see hook_ckeditor_plugin_info_alter()
  * @see plugin_api
  *
  * @Annotation
@@ -27,6 +23,10 @@ class CKEditorPlugin extends Plugin {
 
   /**
    * The plugin ID.
+   *
+   * This MUST match the name of the CKEditor plugin itself (written in
+   * JavaScript). Otherwise CKEditor will throw JavaScript errors when it runs,
+   * because it fails to load this CKEditor plugin.
    *
    * @var string
    */

@@ -1,15 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery.
- */
-
 namespace Drupal\Core\Plugin\Discovery;
 
 use Drupal\Component\Annotation\AnnotationInterface;
 use Drupal\Component\Annotation\Plugin\Discovery\AnnotatedClassDiscovery as ComponentAnnotatedClassDiscovery;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * Defines a discovery mechanism to find annotated plugins in PSR-0 namespaces.
@@ -52,8 +46,10 @@ class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
    * @param string $plugin_definition_annotation_name
    *   (optional) The name of the annotation that contains the plugin definition.
    *   Defaults to 'Drupal\Component\Annotation\Plugin'.
+   * @param string[] $annotation_namespaces
+   *   (optional) Additional namespaces to scan for annotation definitions.
    */
-  function __construct($subdir, \Traversable $root_namespaces, $plugin_definition_annotation_name = 'Drupal\Component\Annotation\Plugin') {
+  public function __construct($subdir, \Traversable $root_namespaces, $plugin_definition_annotation_name = 'Drupal\Component\Annotation\Plugin', array $annotation_namespaces = []) {
     if ($subdir) {
       // Prepend a directory separator to $subdir,
       // if it does not already have one.
@@ -64,8 +60,8 @@ class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
       $this->namespaceSuffix = str_replace('/', '\\', $subdir);
     }
     $this->rootNamespacesIterator = $root_namespaces;
-    $plugin_namespaces = array();
-    parent::__construct($plugin_namespaces, $plugin_definition_annotation_name);
+    $plugin_namespaces = [];
+    parent::__construct($plugin_namespaces, $plugin_definition_annotation_name, $annotation_namespaces);
   }
 
   /**
@@ -106,7 +102,7 @@ class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
     preg_match('|^Drupal\\\\(?<provider>[\w]+)\\\\|', $namespace, $matches);
 
     if (isset($matches['provider'])) {
-      return Unicode::strtolower($matches['provider']);
+      return mb_strtolower($matches['provider']);
     }
 
     return NULL;
@@ -116,17 +112,17 @@ class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
    * {@inheritdoc}
    */
   protected function getPluginNamespaces() {
-    $plugin_namespaces = array();
+    $plugin_namespaces = [];
     if ($this->namespaceSuffix) {
       foreach ($this->rootNamespacesIterator as $namespace => $dirs) {
         // Append the namespace suffix to the base namespace, to obtain the
-        // plugin namespace. E.g. 'Drupal\Views' may become
+        // plugin namespace; for example, 'Drupal\Views' may become
         // 'Drupal\Views\Plugin\Block'.
         $namespace .= $this->namespaceSuffix;
         foreach ((array) $dirs as $dir) {
           // Append the directory suffix to the PSR-4 base directory, to obtain
-          // the directory where plugins are found.
-          // E.g. DRUPAL_ROOT . '/core/modules/views/src' may become
+          // the directory where plugins are found. For example,
+          // DRUPAL_ROOT . '/core/modules/views/src' may become
           // DRUPAL_ROOT . '/core/modules/views/src/Plugin/Block'.
           $plugin_namespaces[$namespace][] = $dir . $this->directorySuffix;
         }
