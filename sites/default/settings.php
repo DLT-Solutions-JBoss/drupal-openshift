@@ -22,4 +22,4 @@ $databases['default']['default'] = [
   'port' => getenv('DRUPAL_DATABASE_PORT'),
   'namespace' => 'Drupal\Core\Database\Driver\mysql',
   'driver' => 'mysql',
-]
+];
