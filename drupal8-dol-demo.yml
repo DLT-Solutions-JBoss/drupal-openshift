@@ -59,7 +59,12 @@ objects:
       to:
         kind: ImageStreamTag
         name: ${APPLICATION_NAME}:latest
-    postCommit: {}
+    postCommit:
+      args:
+        - sites-cp
+        - ./sites
+      command:
+        - mv
     source:
       contextDir: ${CONTEXT_DIR}
       git:
