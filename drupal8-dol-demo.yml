@@ -100,11 +100,11 @@ objects:
       resources: {}
       rollingParams:
         post:
+          failurePolicy: Ignore
           execNewPod:
             command:
-#            - mkdir sites/default
-            - cp sites-cp/default/default.settings.php sites/default/default.settings.php
-            - cp sites-cp/default/settings.php sites/default/settings.php
+            - "./init_settings.sh"
+            containerName: ${APPLICATION_NAME}
         intervalSeconds: 1
         maxSurge: 25%
         maxUnavailable: 25%
