@@ -1,0 +1,14 @@
+name: "Language Selection Page"
+description: "Provides an additional language negotiation fallback using a selection page"
+package: Multilingual
+dependencies:
+  - locale
+configure: language.negotiation
+# core: 8.x
+type: module
+
+# Information added by Drupal.org packaging script on 2018-12-04
+version: '8.x-2.3'
+core: '8.x'
+project: 'language_selection_page'
+datestamp: 1543915712

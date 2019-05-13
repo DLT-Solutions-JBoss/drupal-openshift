@@ -1,0 +1,17 @@
+
+div.cke_reset_all .cke_dialog_body {
+  background-color: #fff;
+  border-radius: 5px;
+}
+
+table .cke_dialog_contents fieldset {
+  padding: 30px 18px 18px;
+}
+
+table .cke_dialog_contents fieldset legend {
+  padding: 0;
+}
+
+.cke_reset_all table .cke_dialog_body label {
+  display: inline;
+}

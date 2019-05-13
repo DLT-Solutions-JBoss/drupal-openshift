@@ -1,0 +1,14 @@
+name: Alertbox Modal
+description: "Add the possibility to show a modal to display alertboxes."
+# core: 8.x
+type: module
+package: alertbox
+configure: alertbox_modal.settings
+dependencies:
+  - alertbox:alertbox
+
+# Information added by Drupal.org packaging script on 2018-02-01
+version: '8.x-1.0-beta8'
+core: '8.x'
+project: 'alertbox'
+datestamp: 1517486883

@@ -1,0 +1,4 @@
+imce.page:
+  route_name: imce.page
+  base_route: entity.user.canonical
+  title: File Browser
