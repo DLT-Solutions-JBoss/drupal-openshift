@@ -1,0 +1,15 @@
+name: Partial Date
+type: module
+description: 'Simple datetime field that allows partial dates.'
+package: Field types
+# core: 8.x
+# version: '8.x-6.0'
+dependencies:
+  - field
+
+
+# Information added by Drupal.org packaging script on 2019-05-10
+version: '8.x-6.1'
+core: '8.x'
+project: 'openfed'
+datestamp: 1557479217

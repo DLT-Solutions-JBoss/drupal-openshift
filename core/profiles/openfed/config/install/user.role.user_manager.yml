@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies: {  }
+id: user_manager
+label: 'User Manager'
+weight: 7
+is_admin: null
+permissions:
+  - 'access administration pages'
+  - 'access toolbar'
+  - 'access user profiles'
+  - 'administer users'
+  - 'assign content_editor role'
+  - 'assign user_manager role'
+  - 'use text format embeddable_text'
+  - 'use text format flexible_html'
+  - 'view the administration theme'
