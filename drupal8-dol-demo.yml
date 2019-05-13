@@ -59,12 +59,7 @@ objects:
       to:
         kind: ImageStreamTag
         name: ${APPLICATION_NAME}:latest
-    postCommit:
-      args:
-        - sites-cp
-        - ./sites
-      command:
-        - mv
+    postCommit: {}
     source:
       contextDir: ${CONTEXT_DIR}
       git:
@@ -104,6 +99,12 @@ objects:
       activeDeadlineSeconds: 21600
       resources: {}
       rollingParams:
+        post:
+          execNewPod:
+            command:
+#            - mkdir sites/default
+            - cp sites-cp/default/default.settings.php sites/default/default.settings.php
+            - cp sites-cp/default/settings.php sites/default/settings.php
         intervalSeconds: 1
         maxSurge: 25%
         maxUnavailable: 25%
