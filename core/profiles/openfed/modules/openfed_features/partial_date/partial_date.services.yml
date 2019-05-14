@@ -1,3 +1,0 @@
-services:
-  partial_date.formatter:
-    class: Drupal\partial_date\PartialDateFormatter

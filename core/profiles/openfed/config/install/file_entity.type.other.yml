@@ -1,8 +1,0 @@
-langcode: en
-status: true
-dependencies: {  }
-id: other
-label: Other
-description: 'Any <em>File</em>.'
-mimetypes:
-  - '*'

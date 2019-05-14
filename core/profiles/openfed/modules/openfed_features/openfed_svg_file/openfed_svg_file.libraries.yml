@@ -1,5 +1,0 @@
-openfed_svg_file.form_edit:
-  version: 1.x
-  css:
-    layout:
-      styles/css/styles.css: {}

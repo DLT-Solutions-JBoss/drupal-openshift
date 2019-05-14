@@ -1,6 +1,0 @@
-services:
-  openfed.helper:
-    class: '\Drupal\openfed\Helper'
-    arguments:
-      - '@app.root'
-      - '@site.path'
