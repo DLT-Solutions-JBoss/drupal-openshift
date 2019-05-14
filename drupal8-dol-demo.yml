@@ -44,6 +44,8 @@ objects:
   metadata:
     annotations:
       description: Keeps track of changes in the application image
+    labels:
+      app: ${APPLICATION_NAME}
     name: ${APPLICATION_NAME}
 - apiVersion: v1
   kind: BuildConfig
@@ -100,11 +102,12 @@ objects:
       resources: {}
       rollingParams:
         post:
+          failurePolicy: Ignore
           execNewPod:
             command:
-#            - mkdir sites/default
-            - cp sites-cp/default/default.settings.php sites/default/default.settings.php
-            - cp sites-cp/default/settings.php sites/default/settings.php
+              - bash
+              - init_settings.sh
+            containerName: ${APPLICATION_NAME}
         intervalSeconds: 1
         maxSurge: 25%
         maxUnavailable: 25%
@@ -178,6 +181,8 @@ objects:
       template.openshift.io/expose-password: '{.data[''database-password'']}'
       template.openshift.io/expose-root_password: '{.data[''database-root-password'']}'
       template.openshift.io/expose-username: '{.data[''database-user'']}'
+    labels:
+      app: ${APPLICATION_NAME}
     name: ${DATABASE_SERVICE_NAME}
   stringData:
     database-name: ${MYSQL_DATABASE}
@@ -189,6 +194,8 @@ objects:
   metadata:
     annotations:
       template.openshift.io/expose-uri: mysql://{.spec.clusterIP}:{.spec.ports[?(.name=="mysql")].port}
+    labels:
+      app: ${APPLICATION_NAME}
     name: ${DATABASE_SERVICE_NAME}
   spec:
     ports:
@@ -200,6 +207,8 @@ objects:
   kind: PersistentVolumeClaim
   metadata:
     name: ${DATABASE_SERVICE_NAME}
+    labels:
+      app: ${APPLICATION_NAME}
   spec:
     accessModes:
     - ReadWriteOnce
@@ -210,6 +219,8 @@ objects:
   kind: PersistentVolumeClaim
   metadata:
     name: ${APPLICATION_NAME}
+    labels:
+      app: ${APPLICATION_NAME}
   spec:
     accessModes:
     - ReadWriteOnce
@@ -221,6 +232,8 @@ objects:
   metadata:
     annotations:
       template.alpha.openshift.io/wait-for-ready: "true"
+    labels:
+      app: ${APPLICATION_NAME}
     name: ${DATABASE_SERVICE_NAME}
   spec:
     replicas: 1
@@ -331,6 +344,7 @@ parameters:
 - name: CONTEXT_DIR
   description: Set this to the relative path to your project if it is not in the root of your repository.
   displayName: Context Directory
+  value: "/"
 - name: GITHUB_WEBHOOK_SECRET
   description: Github trigger secret.  A difficult to guess string encoded as part of the webhook URL.  Not encrypted.
   displayName: GitHub Webhook Secret
