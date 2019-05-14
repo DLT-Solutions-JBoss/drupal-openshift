@@ -20,6 +20,8 @@ namespace Symfony\Component\CssSelector\Node;
  * @see http://www.w3.org/TR/selectors/#specificity
  *
  * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
+ *
+ * @internal
  */
 class Specificity
 {
@@ -27,24 +29,11 @@ class Specificity
     const B_FACTOR = 10;
     const C_FACTOR = 1;
 
-    /**
-     * @var int
-     */
     private $a;
-
-    /**
-     * @var int
-     */
     private $b;
-
-    /**
-     * @var int
-     */
     private $c;
 
     /**
-     * Constructor.
-     *
      * @param int $a
      * @param int $b
      * @param int $c
@@ -57,11 +46,9 @@ class Specificity
     }
 
     /**
-     * @param Specificity $specificity
-     *
-     * @return Specificity
+     * @return self
      */
-    public function plus(Specificity $specificity)
+    public function plus(self $specificity)
     {
         return new self($this->a + $specificity->a, $this->b + $specificity->b, $this->c + $specificity->c);
     }
@@ -80,11 +67,9 @@ class Specificity
      * Returns -1 if the object specificity is lower than the argument,
      * 0 if they are equal, and 1 if the argument is lower.
      *
-     * @param Specificity $specificity
-     *
      * @return int
      */
-    public function compareTo(Specificity $specificity)
+    public function compareTo(self $specificity)
     {
         if ($this->a !== $specificity->a) {
             return $this->a > $specificity->a ? 1 : -1;

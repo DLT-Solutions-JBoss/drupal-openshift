@@ -25,12 +25,11 @@ use Symfony\Component\CssSelector\Parser\ParserInterface;
  * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
  *
  * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
+ *
+ * @internal
  */
 class Translator implements TranslatorInterface
 {
-    /**
-     * @var ParserInterface
-     */
     private $mainParser;
 
     /**
@@ -39,38 +38,16 @@ class Translator implements TranslatorInterface
     private $shortcutParsers = array();
 
     /**
-     * @var Extension\ExtensionInterface
+     * @var Extension\ExtensionInterface[]
      */
     private $extensions = array();
 
-    /**
-     * @var array
-     */
     private $nodeTranslators = array();
-
-    /**
-     * @var array
-     */
     private $combinationTranslators = array();
-
-    /**
-     * @var array
-     */
     private $functionTranslators = array();
-
-    /**
-     * @var array
-     */
     private $pseudoClassTranslators = array();
-
-    /**
-     * @var array
-     */
     private $attributeMatchingTranslators = array();
 
-    /**
-     * Constructor.
-     */
     public function __construct(ParserInterface $parser = null)
     {
         $this->mainParser = $parser ?: new Parser();
@@ -145,9 +122,7 @@ class Translator implements TranslatorInterface
     /**
      * Registers an extension.
      *
-     * @param Extension\ExtensionInterface $extension
-     *
-     * @return Translator
+     * @return $this
      */
     public function registerExtension(Extension\ExtensionInterface $extension)
     {
@@ -181,9 +156,7 @@ class Translator implements TranslatorInterface
     /**
      * Registers a shortcut parser.
      *
-     * @param ParserInterface $shortcut
-     *
-     * @return Translator
+     * @return $this
      */
     public function registerParserShortcut(ParserInterface $shortcut)
     {
@@ -193,8 +166,6 @@ class Translator implements TranslatorInterface
     }
 
     /**
-     * @param NodeInterface $node
-     *
      * @return XPathExpr
      *
      * @throws ExpressionErrorException
@@ -205,7 +176,7 @@ class Translator implements TranslatorInterface
             throw new ExpressionErrorException(sprintf('Node "%s" not supported.', $node->getNodeName()));
         }
 
-        return call_user_func($this->nodeTranslators[$node->getNodeName()], $node, $this);
+        return \call_user_func($this->nodeTranslators[$node->getNodeName()], $node, $this);
     }
 
     /**
@@ -223,13 +194,10 @@ class Translator implements TranslatorInterface
             throw new ExpressionErrorException(sprintf('Combiner "%s" not supported.', $combiner));
         }
 
-        return call_user_func($this->combinationTranslators[$combiner], $this->nodeToXPath($xpath), $this->nodeToXPath($combinedXpath));
+        return \call_user_func($this->combinationTranslators[$combiner], $this->nodeToXPath($xpath), $this->nodeToXPath($combinedXpath));
     }
 
     /**
-     * @param XPathExpr    $xpath
-     * @param FunctionNode $function
-     *
      * @return XPathExpr
      *
      * @throws ExpressionErrorException
@@ -240,7 +208,7 @@ class Translator implements TranslatorInterface
             throw new ExpressionErrorException(sprintf('Function "%s" not supported.', $function->getName()));
         }
 
-        return call_user_func($this->functionTranslators[$function->getName()], $xpath, $function);
+        return \call_user_func($this->functionTranslators[$function->getName()], $xpath, $function);
     }
 
     /**
@@ -257,7 +225,7 @@ class Translator implements TranslatorInterface
             throw new ExpressionErrorException(sprintf('Pseudo-class "%s" not supported.', $pseudoClass));
         }
 
-        return call_user_func($this->pseudoClassTranslators[$pseudoClass], $xpath);
+        return \call_user_func($this->pseudoClassTranslators[$pseudoClass], $xpath);
     }
 
     /**
@@ -266,9 +234,9 @@ class Translator implements TranslatorInterface
      * @param string    $attribute
      * @param string    $value
      *
-     * @throws ExpressionErrorException
-     *
      * @return XPathExpr
+     *
+     * @throws ExpressionErrorException
      */
     public function addAttributeMatching(XPathExpr $xpath, $operator, $attribute, $value)
     {
@@ -276,7 +244,7 @@ class Translator implements TranslatorInterface
             throw new ExpressionErrorException(sprintf('Attribute matcher operator "%s" not supported.', $operator));
         }
 
-        return call_user_func($this->attributeMatchingTranslators[$operator], $xpath, $attribute, $value);
+        return \call_user_func($this->attributeMatchingTranslators[$operator], $xpath, $attribute, $value);
     }
 
     /**
