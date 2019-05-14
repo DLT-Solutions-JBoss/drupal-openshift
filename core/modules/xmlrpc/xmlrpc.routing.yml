@@ -1,6 +1,0 @@
-xmlrpc:
-  path: '/xmlrpc'
-  defaults:
-    _controller: '\Drupal\xmlrpc\Controller\XmlrpcController::php'
-  requirements:
-    _access: 'TRUE'

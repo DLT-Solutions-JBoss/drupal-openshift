@@ -1,8 +1,10 @@
-if [ -d "/opt/app-root/src/sites/default" ]
+#!/usr/bin
+
+if [ -d "./sites/default" ]
 then
 	echo "sites default directory  exists!"
 else
-	mkdir "/opt/app-root/src/sites/default"
+	mkdir "./sites/default"
 fi
 
-cp /opt/app-root/src/sites-cp/default/*settings.php /opt/app-root/src/sites/default/.
+cp ./sites-cp/default/*settings.php ./sites/default/.

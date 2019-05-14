@@ -1,5 +1,0 @@
-alertbox.settings:
-  title: 'Alertbox settings'
-  base_route_name: alertbox.settings
-  names:
-    - alertbox.settings

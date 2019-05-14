@@ -1,5 +1,0 @@
-<?php
-
-function ofed_switcher_install() {
-  module_set_weight('ofed_switcher', 500);
-}

@@ -1,5 +1,0 @@
-{
-  "name": "drupal/m4032404",
-  "description": "Emit a 404 response for access denied pages",
-  "type": "drupal-module"
-}
