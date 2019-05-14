@@ -102,7 +102,7 @@ objects:
       resources: {}
       rollingParams:
         post:
-          failurePolicy: Ignore
+          failurePolicy: Retry
           execNewPod:
             command:
               - bash
