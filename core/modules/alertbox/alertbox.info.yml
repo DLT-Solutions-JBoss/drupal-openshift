@@ -1,0 +1,16 @@
+name: Alertbox
+description: "Creates alertboxes to display information across the site."
+# core: 8.x
+type: module
+package: alertbox
+configure: alertbox.settings
+dependencies:
+    - drupal:block_content
+    - drupal:text
+    - drupal:options
+
+# Information added by Drupal.org packaging script on 2018-02-01
+version: '8.x-1.0-beta8'
+core: '8.x'
+project: 'alertbox'
+datestamp: 1517486883

@@ -105,8 +105,12 @@ objects:
           failurePolicy: Ignore
           execNewPod:
             command:
+<<<<<<< HEAD
               - bash
               - init_settings.sh
+=======
+            - "mkdir ./sites/default; cp ./sites-cp/default/*settings.php ./sites/default/."
+>>>>>>> 0030cae34ad0cf2dbd68d25de44c0a7c3e7d3e46
             containerName: ${APPLICATION_NAME}
         intervalSeconds: 1
         maxSurge: 25%
@@ -321,6 +325,8 @@ objects:
     host: ${APPLICATION_NAME}.apps.labor.ocp.demo-dlt.com
     port:
       targetPort: 8080-tcp
+    tls:
+      termination: edge
     to:
       kind: Service
       name: ${APPLICATION_NAME}

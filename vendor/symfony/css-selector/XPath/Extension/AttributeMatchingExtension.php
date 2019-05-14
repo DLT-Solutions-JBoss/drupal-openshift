@@ -21,6 +21,8 @@ use Symfony\Component\CssSelector\XPath\XPathExpr;
  * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
  *
  * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
+ *
+ * @internal
  */
 class AttributeMatchingExtension extends AbstractExtension
 {
@@ -126,7 +128,7 @@ class AttributeMatchingExtension extends AbstractExtension
         return $xpath->addCondition($value ? sprintf(
             '%1$s and substring(%1$s, string-length(%1$s)-%2$s) = %3$s',
             $attribute,
-            strlen($value) - 1,
+            \strlen($value) - 1,
             Translator::getXpathLiteral($value)
         ) : '0');
     }
