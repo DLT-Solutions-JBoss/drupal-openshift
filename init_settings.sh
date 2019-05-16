@@ -5,9 +5,8 @@ then
 	echo "sites default directory  exists!"
 else
 	mkdir "./sites/default"
+  cp ./sites-cp/default/*settings.php ./sites/default/.
 fi
-
-cp ./sites-cp/default/*settings.php ./sites/default/.
 
 if [ -d "./sites/default/config/sync" ]
 then
@@ -15,6 +14,5 @@ then
 else
 	mkdir "./sites/default/config"
   mkdir "./sites/default/config/sync"
+  cp ./sites-cp/default/config/sync/* ./sites/default/config/sync/.
 fi
-
-cp ./sites-cp/default/config/sync/* ./sites/default/config/sync/.
