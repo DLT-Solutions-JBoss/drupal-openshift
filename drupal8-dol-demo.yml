@@ -318,7 +318,6 @@ objects:
       app: ${APPLICATION_NAME}
     name: ${APPLICATION_NAME}
   spec:
-    host: ${APPLICATION_NAME}.apps.labor.ocp.demo-dlt.com
     port:
       targetPort: 8080-tcp
     to:
