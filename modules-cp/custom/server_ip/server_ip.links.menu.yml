@@ -1,4 +1,0 @@
-server_ip.admin:
-  title: 'Server Details'
-  parent: system.admin
-  route_name: server_ip.admin
