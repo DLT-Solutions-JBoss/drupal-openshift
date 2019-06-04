@@ -16,7 +16,7 @@ oc policy add-role-to-user edit system:serviceaccount:${DEMONAME}-jenkins:jenkin
 
 # Create Blue Application
 oc project ${DEMONAME}-prod
-oc process drupal8-app-demo -n dev \
+oc process drupal8-app-demo -n openshift \
     -p APPLICATION_NAME=${DEMONAME}-blue \
     -p DATABASE_SERVICE_NAME=mysql-${DEMONAME}-blue \
     -p MYSQL_USER=${DEMONAME} \
@@ -38,7 +38,7 @@ oc patch dc ${DEMONAME}-blue -p '{"spec":{"template":{"spec":{"imagePullSecrets"
 
 # Create Green Application
 oc project ${DEMONAME}-prod
-oc process drupal8-app-demo -n dev \
+oc process drupal8-app-demo -n openshift \
     -p APPLICATION_NAME=${DEMONAME}-green \
     -p DATABASE_SERVICE_NAME=mysql-${DEMONAME}-green \
     -p MYSQL_USER=${DEMONAME} \

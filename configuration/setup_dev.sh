@@ -16,7 +16,7 @@ oc policy add-role-to-user edit system:serviceaccount:${DEMONAME}-jenkins:jenkin
 # oc new-build --binary=true --name="${DEMONAME}" jboss-eap71-openshift:1.3 -n ${DEMONAME}-dev
 # oc new-build --binary=true --name="${DEMONAME}" --image-stream=openshift/jboss-eap71-openshift:1.1 -n ${DEMONAME}-dev
 oc project ${DEMONAME}-dev
-oc process drupal8-app-demo -n dev \
+oc process drupal8-app-demo -n openshift \
     -p APPLICATION_NAME=${DEMONAME} \
     -p DATABASE_SERVICE_NAME=mysql-${DEMONAME} \
     -p MYSQL_USER=${DEMONAME} \
