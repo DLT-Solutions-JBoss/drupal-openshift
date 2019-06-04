@@ -3,7 +3,7 @@
 if [ "$#" -ne 3 ]; then
     echo "Usage:"
     echo "  $0 DEMONAME REPO CLUSTER"
-    echo "  Example: $0 wkha https://github.com/DLT-Solutions-JBoss/drupal-openshift.git master.labor.ocp.demo-dlt.com"
+    echo "  Example: $0 dol https://github.com/DLT-Solutions-JBoss/drupal-openshift.git master.labor.ocp.demo-dlt.com"
     exit 1
 fi
 
@@ -36,7 +36,7 @@ items:
       type: "Git"
       git:
         uri: "$REPO"
-      contextDir: openshift
+      contextDir: /
     strategy:
       type: "JenkinsPipeline"
       jenkinsPipelineStrategy:

@@ -25,7 +25,7 @@ oc process drupal8-app-demo -n openshift \
     -p MYSQL_ROOT_PASSWORD=${DEMONAME} \
     | oc create -f -
 # oc new-app ${DEMONAME}-dev/${DEMONAME}:0.0-0 --name=tasks --allow-missing-imagestream-tags=true -n ${DEMONAME}-dev
-# oc set triggers dc/tasks --remove-all -n ${DEMONAME}-dev
+oc set triggers dc/${DEMONAME} --remove-all -n ${DEMONAME}-dev
 # oc expose dc ${DEMONAME} --port 8080 -n ${DEMONAME}-dev
 # oc expose svc ${DEMONAME} -n ${DEMONAME}-dev
 #oc create configmap tasks-config --from-literal="application-users.properties=Placeholder" --from-literal="application-roles.properties=Placeholder" -n ${DEMONAME}-dev

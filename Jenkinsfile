@@ -1,22 +1,21 @@
 #!groovy
-podTemplate(
-  label: "doldemo-pod",
-  cloud: "openshift",
-  inheritFrom: "maven",
-  containers: [
-    containerTemplate(
-      name: "jnlp",
-      image: "docker-registry.default.svc:5000/${DEMONAME}-jenkins/jenkins-agent-appdev",
-      resourceRequestMemory: "1Gi",
-      resourceLimitMemory: "2Gi",
-      resourceRequestCpu: "1",
-      resourceLimitCpu: "2"
-    )
-  ]
-) {
-  node('doldemo-pod') {
-    // Define Maven Command to point to the correct
-    // settings for our Nexus installation
+
+// Set your project Prefix
+def DEMONAME     = "dol"
+
+// Set variable globally to be available in all stages
+// Set Development and Production Project Names
+def devProject   = "${DEMONAME}-dev"
+def testProject  = "${DEMONAME}-test"
+def prodProject  = "${DEMONAME}-prod"
+
+
+pipeline {
+  agent {
+    // Using the Jenkins Agent Pod that we defined earlier
+    label "drupal-appdev"
+  }
+ stages {
     stage('Checkout Source') {
       checkout scm
     }
@@ -70,7 +69,7 @@ podTemplate(
 
       // Blue/Green Deployment into Production
       // -------------------------------------
-      def destApp   = "doldemo-green"
+      def destApp   = "${DEMONAME}-green"
       def activeApp = ""
 
       stage('Blue/Green Production Deployment') {
