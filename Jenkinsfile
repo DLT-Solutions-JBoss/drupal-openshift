@@ -1,8 +1,4 @@
 pipeline {
-  agent {
-    // Using the Jenkins Agent Pod that we defined earlier
-    label "jenkins-drupal-slave"
-  }
  stages {
     stage('Checkout Source') {
       steps {
