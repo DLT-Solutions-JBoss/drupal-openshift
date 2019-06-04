@@ -1,7 +1,7 @@
 pipeline {
   agent {
     // Using the Jenkins Agent Pod that we defined earlier
-    label "drupal-appdev"
+    label "jenkins-drupal-slave"
   }
  stages {
     stage('Checkout Source') {
