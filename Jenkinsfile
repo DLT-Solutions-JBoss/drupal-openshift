@@ -1,5 +1,3 @@
-#!groovy
-
 // Set your project Prefix
 def DEMONAME     = "dol"
 
@@ -8,7 +6,7 @@ def DEMONAME     = "dol"
 def devProject   = "${DEMONAME}-dev"
 def testProject  = "${DEMONAME}-test"
 def prodProject  = "${DEMONAME}-prod"
-
+def version = "v1"
 
 pipeline {
   agent {
@@ -20,21 +18,12 @@ pipeline {
       checkout scm
     }
 
-    // Build the DolDemo Service
-    dir('/') {
-      // The following variables need to be defined at the top level
-      // and not inside the scope of a stage - otherwise they would not
-      // be accessible from other stages.
-      // Extract version from the pom.xml
-      def version = "v1"
+    def devTag  = "${version}-${currentBuild.number}"
+    def prodTag = "${version}"
 
-      // Set the tag for the development image: version + build number
-      def devTag  = "${version}-${currentBuild.number}"
-      // Set the tag for the production image: version
-      def prodTag = "${version}"
-      
+    // Build the DolDemo Service
       // Build the OpenShift Image in OpenShift and tag it.
-      stage('ReBuild Dev and Tag OpenShift Image') {
+    stage('ReBuild Dev and Tag OpenShift Image') {
         // Build Image, tag Image
         echo "Building OpenShift container image ${DEMONAME}:${devTag}"
 
@@ -123,7 +112,6 @@ pipeline {
           }
         }
       }
-    }
   }
 }
 
