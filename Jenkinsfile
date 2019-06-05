@@ -14,7 +14,7 @@ pipeline {
       def testProject  = "${DEMONAME}-test"
       def prodProject  = "${DEMONAME}-prod"
       def version = "1"
-      def devTag  = ""
+      def devTag  = "${version}-${currentBuild.number}"
       def prodTag = "${version}"
       def destApp   = "${DEMONAME}-green"
       def activeApp = ""
@@ -25,7 +25,6 @@ pipeline {
       steps {
         echo "Checking out Code"
         checkout scm
-        devTag  = "${version}-${currentBuild.number}"
       }
     }
 
