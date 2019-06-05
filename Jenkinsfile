@@ -1,7 +1,7 @@
 pipeline {
   agent {
     // Using the Jenkins Agent Pod that we defined earlier
-    label "maven-appdev"
+    label "jenkins-agent-appdev"
   }
  stages {
     stage('Checkout Source') {
