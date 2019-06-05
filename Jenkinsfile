@@ -14,9 +14,9 @@ pipeline {
     // Build the OpenShift Image in OpenShift and tag it.
     stage('ReBuild Dev and Tag OpenShift Image') {
 
-      echo "Building Dev OpenShift container image"
-
       steps {
+
+        echo "Building Dev OpenShift container image"
 
         script {
           // Set your project Prefix
