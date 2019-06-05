@@ -8,6 +8,16 @@ pipeline {
       steps {
         checkout scm
 
+      }
+    }
+
+    // Build the OpenShift Image in OpenShift and tag it.
+    stage('ReBuild Dev and Tag OpenShift Image') {
+
+      echo "Building Dev OpenShift container image"
+
+      steps {
+
         script {
           // Set your project Prefix
           def DEMONAME     = "dol"
@@ -22,27 +32,19 @@ pipeline {
           def prodTag = "${version}"
           def destApp   = "${DEMONAME}-green"
           def activeApp = ""
-        }
-      }
-    }
 
-    // Build the OpenShift Image in OpenShift and tag it.
-    stage('ReBuild Dev and Tag OpenShift Image') {
+          // Build Image, tag Image
+          echo "Building OpenShift container image ${DEMONAME}:${devTag}"
 
-      steps {
-        // Build Image, tag Image
-        echo "Building OpenShift container image ${DEMONAME}:${devTag}"
-
-        // Start PHP Build in OpenShift
-        script {
-            openshift.withCluster() {
-              openshift.withProject("${devProject}") {
+          // Start PHP Build in OpenShift
+          openshift.withCluster() {
+            openshift.withProject("${devProject}") {
                 
-                openshift.selector("bc", "${DEMONAME}").startBuild("--wait=true")
-                openshift.tag("${DEMONAME}:latest", "${DEMONAME}:${devTag}")
+              openshift.selector("bc", "${DEMONAME}").startBuild("--wait=true")
+              openshift.tag("${DEMONAME}:latest", "${DEMONAME}:${devTag}")
               }
             }
-          }
+          } 
         }
       }
 
