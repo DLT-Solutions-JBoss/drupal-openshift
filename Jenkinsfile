@@ -2,8 +2,9 @@ pipeline {
   agent {
     // Using the Jenkins Agent Pod that we defined earlier
     label "jenkins-agent-appdev"
-  
-    environment {
+  }
+
+  environment {
       // Set your project Prefix
       def DEMONAME     = "dol"
 
@@ -12,17 +13,19 @@ pipeline {
       def devProject   = "${DEMONAME}-dev"
       def testProject  = "${DEMONAME}-test"
       def prodProject  = "${DEMONAME}-prod"
-      def version = "v1"
-      def devTag  = "${version}-${currentBuild.number}"
+      def version = "1"
+      def devTag  = ""
       def prodTag = "${version}"
       def destApp   = "${DEMONAME}-green"
       def activeApp = ""
-    }
   }
- stages {
+
+  stages {
     stage('Checkout Source') {
       steps {
+        echo "Checking out Code"
         checkout scm
+        devTag  = "${version}-${currentBuild.number}"
       }
     }
 
