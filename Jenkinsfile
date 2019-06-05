@@ -2,12 +2,27 @@ pipeline {
   agent {
     // Using the Jenkins Agent Pod that we defined earlier
     label "jenkins-agent-appdev"
+  
+    environment {
+      // Set your project Prefix
+      def DEMONAME     = "dol"
+
+      // Set variable globally to be available in all stages
+      // Set Development and Production Project Names
+      def devProject   = "${DEMONAME}-dev"
+      def testProject  = "${DEMONAME}-test"
+      def prodProject  = "${DEMONAME}-prod"
+      def version = "v1"
+      def devTag  = "${version}-${currentBuild.number}"
+      def prodTag = "${version}"
+      def destApp   = "${DEMONAME}-green"
+      def activeApp = ""
+    }
   }
  stages {
     stage('Checkout Source') {
       steps {
         checkout scm
-
       }
     }
 
@@ -19,20 +34,6 @@ pipeline {
         echo "Building Dev OpenShift container image"
 
         script {
-          // Set your project Prefix
-          def DEMONAME     = "dol"
-
-          // Set variable globally to be available in all stages
-          // Set Development and Production Project Names
-          def devProject   = "${DEMONAME}-dev"
-          def testProject  = "${DEMONAME}-test"
-          def prodProject  = "${DEMONAME}-prod"
-          def version = "v1"
-          def devTag  = "${version}-${currentBuild.number}"
-          def prodTag = "${version}"
-          def destApp   = "${DEMONAME}-green"
-          def activeApp = ""
-
           // Build Image, tag Image
           echo "Building OpenShift container image ${DEMONAME}:${devTag}"
 
