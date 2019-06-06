@@ -77,15 +77,16 @@ Community templates and image streams are **not** provided or supported by Red H
 
     $ ./configuration/setup_jenkins.sh DEMONAME REPO CLUSTER
 
-Example: ./setup_jenkins.sh DEMONAME https://github.com/DLT-Solutions-JBoss/drupal-openshift.git master.example.ocp.yourcompany.com
+Example:
+    $ ./configuration/setup_jenkins.sh DEMONAME https://github.com/DLT-Solutions-JBoss/drupal-openshift.git master.example.ocp.yourcompany.com
 
 ### Installing the Drupal App Template
 
-    $ oc create -f drupal8-dol-demo.yml -n openshift
+    $ oc create -f drupal8-mysql-persistent.yml -n openshift
     
 ## Verifying Your Additions
 
-    $ ./configuration/verify_prerequisistes.sh DEMONAME
+    $ ./configuration/verify_prerequisistes.sh DEMONAME USER
     
 The `make verify` command runs the following checks:
  - verifies YAML syntax

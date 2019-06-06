@@ -16,7 +16,7 @@ metadata:
     openshift.io/provider-display-name: DLT Solutions & Red Hat, Inc.
     openshift.io/support-url: https://access.redhat.com
 
-    tags: instant-drupal-app,drupal
+    tags: instant-drupal-app,drupal,drupal8-mysql-persistent
   name: drupal8-app-demo
 objects:
 - apiVersion: v1
