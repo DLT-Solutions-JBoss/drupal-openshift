@@ -6,10 +6,14 @@ This repository contains a curated set of php files, configuration, and template
 - [Overview](#overview)
     - [Official](#official)
     - [Community](#community)
-- [Building the Library](#building-the-library)
-    - [Python Dependencies](#python-dependencies)
-    - [Running the Script](#running-the-script)
-    - [Verifying Your Updates](#verifying-your-updates)
+- [Building the OpenShift Drupal Lifecycle Projects](#building-the-library)
+    - [Clone this repo to a Linux env](#python-dependencies)
+    - [Login to your OCP environment as administrator](#running-the-script)
+    - [Variables used in setup scripts](#verifying-your-updates)
+    - [Setup Lifecycle Projects](#verifying-your-updates)
+    - [Setup Jenkins Project](#verifying-your-updates)
+    - [Installing the Drupal App Template](#verifying-your-updates)
+    - [Verifying Your Additions](#verifying-your-updates)
 - [Contributing](#contributing)
     - [YAML File Structure](#yaml-file-structure)
         - [Variables](#variables)
@@ -50,19 +54,38 @@ Community templates and image streams are **not** provided or supported by Red H
 
 ### Login to your OCP environment as administrator
 
-    $ oc login https://master.example.ocp.yourcompany.com --username=admin (--password=admin_pass)
+    $ oc login https://master.example.ocp.yourcompany.com --username=*admin* (--password=*admin_pass*)
 
-### Setup Projects
+### Variables used in setup scripts
 
-    $ ./configuration/setup_projects.sh 
+- DEMONAME - The name of the demo srupal app you wish to build
+- USER - Your OpenShift user name.
+- REPO - Your cloned git repository full url.
+- CLUSER - The domain name of your OpenShift cluster.
 
-### Running the Script
+### Setup Lifecycle Projects
 
-    $ make import
+    $ ./configuration/setup_projects.sh DEMONAME USER
+
+    $ ./configuration/setup_dev.sh DEMONAME
+
+    $ ./configuration/setup_test.sh DEMONAME
+
+    $ ./configuration/setup_prod.sh DEMONAME
+
+### Setup Jenkins Project
+
+    $ ./configuration/setup_jenkins.sh DEMONAME REPO CLUSTER
+
+Example: ./setup_jenkins.sh DEMONAME https://github.com/DLT-Solutions-JBoss/drupal-openshift.git master.example.ocp.yourcompany.com
+
+### Installing the Drupal App Template
+
+    $ oc create -f drupal8-dol-demo.yml -n openshift
     
-## Verifying Your Updates
+## Verifying Your Additions
 
-    $ make verify
+    $ ./configuration/verify_prerequisistes.sh DEMONAME
     
 The `make verify` command runs the following checks:
  - verifies YAML syntax
@@ -89,7 +112,7 @@ That's it!  Your pull request will be reviewed by a member of the OpenShift Team
     variables: # (optional) top level block item
       <variable_name>: <value> # (optional)
     data: # (required) top level block item
-      <folder_name>: # (required) folder that the below items will be stored in
+      DEMONAME<folder_name>: # (required) folder that the below items will be stored in
         imagestreams: # (optional) list of image-streams to process into the above folder
           - location: # (required) github url to a json file or folder of json files
             regex: # (optional) matched against ['metadata']['name'] in the json file
@@ -135,6 +158,9 @@ The **regex** is a plain string that is matched against the `['metadata']['name'
 
 The **suffix** is applied to the end of the filename that is created right before the .json file extension and can contain dashes (-) or underscores (_).
 
+### Cleaning up your projects
+
+    $ ./configuration/cleanup.sh DEMONAME
 
 ## Additional information
 
