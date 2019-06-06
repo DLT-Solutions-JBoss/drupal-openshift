@@ -13,10 +13,10 @@ USER=$2
 FROM_JENKINS=$3
 
 echo "Creating Demo Projects for DEMONAME=${DEMONAME} and USER=${USER}"
-oc new-project ${DEMONAME}-jenkins    --display-name="${DEMONAME} Adv Demo Jenkins"
-oc new-project ${DEMONAME}-dev  --display-name="${DEMONAME} Adv Demo Development"
-oc new-project ${DEMONAME}-test  --display-name="${DEMONAME} Adv Demo Test"
-oc new-project ${DEMONAME}-prod --display-name="${DEMONAME} Adv Demo Production"
+oc new-project ${DEMONAME}-jenkins    --display-name="${DEMONAME} Demo Jenkins"
+oc new-project ${DEMONAME}-dev  --display-name="${DEMONAME} Demo Development"
+oc new-project ${DEMONAME}-test  --display-name="${DEMONAME} Demo Test"
+oc new-project ${DEMONAME}-prod --display-name="${DEMONAME} Demo Production"
 
 if [ "$FROM_JENKINS" = "true" ]; then
   oc policy add-role-to-user admin ${USER} -n ${DEMONAME}-jenkins

@@ -24,16 +24,16 @@ oc process drupal8-app-demo -n openshift \
     -p MYSQL_DATABASE=${DEMONAME} \
     -p MYSQL_ROOT_PASSWORD=${DEMONAME} \
     | oc create -f -
-oc set triggers dc/${DEMONAME}-blue --remove-all -n ${DEMONAME}-prod
-oc expose dc ${DEMONAME}-blue --port 8080 -n ${DEMONAME}-prod
+#oc set triggers dc/${DEMONAME}-blue --remove-all -n ${DEMONAME}-prod
+#oc expose dc ${DEMONAME}-blue -n ${DEMONAME}-prod
 #oc create configmap ${DEMONAME}-blue-config --from-literal="application-users.properties=Placeholder" --from-literal="application-roles.properties=Placeholder" -n ${DEMONAME}-prod
 #oc set volume dc/${DEMONAME}-blue --add --name=jboss-config --mount-path=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties --configmap-name='${DEMONAME}'-blue-config -n ${DEMONAME}-prod
 #oc set volume dc/${DEMONAME}-blue --add --name=jboss-config1 --mount-path=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties --configmap-name='${DEMONAME}'-blue-config -n ${DEMONAME}-prod
 #oc set probe dc/${DEMONAME}-blue --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
 #oc set probe dc/${DEMONAME}-blue --liveness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
-oc set env dc/${DEMONAME}-blue VERSION='0.0 (${DEMONAME}-blue)' -n ${DEMONAME}-prod
-oc patch dc ${DEMONAME}-blue -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
+oc set env dc/${DEMONAME}-blue VERSION="0.0 (${DEMONAME}-blue)" -n ${DEMONAME}-prod
+#oc patch dc ${DEMONAME}-blue -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
 
 
 # Create Green Application
@@ -46,16 +46,16 @@ oc process drupal8-app-demo -n openshift \
     -p MYSQL_DATABASE=${DEMONAME} \
     -p MYSQL_ROOT_PASSWORD=${DEMONAME} \
     | oc create -f -
-oc set triggers dc/${DEMONAME}-green --remove-all -n ${DEMONAME}-prod
-oc expose dc ${DEMONAME}-green --port 8080 -n ${DEMONAME}-prod
+#oc set triggers dc/${DEMONAME}-green --remove-all -n ${DEMONAME}-prod
+#oc expose dc ${DEMONAME}-green -n ${DEMONAME}-prod
 #oc create configmap ${DEMONAME}-green-config --from-literal="application-users.properties=Placeholder" --from-literal="application-roles.properties=Placeholder" -n ${DEMONAME}-prod
 #oc set volume dc/${DEMONAME}-green --add --name=jboss-config --mount-path=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties --configmap-name='${DEMONAME}'-green-config -n ${DEMONAME}-prod
 #oc set volume dc/${DEMONAME}-green --add --name=jboss-config1 --mount-path=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties --configmap-name='${DEMONAME}'-green-config -n ${DEMONAME}-prod
 #oc set probe dc/${DEMONAME}-green --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
 #oc set probe dc/${DEMONAME}-green --liveness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
-oc set env dc/${DEMONAME}-green VERSION='0.0 (${DEMONAME}-green)' -n ${DEMONAME}-prod
-oc patch dc ${DEMONAME}-green -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
+oc set env dc/${DEMONAME}-green VERSION="0.0 (${DEMONAME}-green)" -n ${DEMONAME}-prod
+#oc patch dc ${DEMONAME}-green -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
 
 # Expose Blue service as route to make green application active
 oc expose svc/${DEMONAME}-green --name ${DEMONAME} -n ${DEMONAME}-prod
