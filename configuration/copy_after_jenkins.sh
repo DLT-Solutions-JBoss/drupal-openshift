@@ -12,10 +12,14 @@ DEMONAME=$1
 
 echo "getting pods from each project"
 
-DEV_POD= `oc get pod -n ${DEMONAME}-dev |grep '^${DEMONAME}' |grep 'Running'| cut -f1 -d" "`
-TEST_POD= `oc get pod -n ${DEMONAME}-test |grep '^${DEMONAME}' |grep 'Running'| cut -f1 -d" "`
-PROD_BLUE_POD= `oc get pod -n ${DEMONAME}-prod |grep '^${DEMONAME}' |grep 'Running'| grep blue | cut -f1 -d" "`
-PROD_GREEN_POD= `oc get pod -n ${DEMONAME}-prod |grep '^${DEMONAME}' |grep 'Running'| grep green | cut -f1 -d" "`
+DEV_POD=$(oc get pod -n dol-dev |grep '^dol' |grep 'Running'| cut -f1 -d" ")
+echo "Dev pod is ${DEV_POD}"
+TEST_POD=$(oc get pod -n dol-test |grep '^dol' |grep 'Running'| cut -f1 -d" ")
+echo "Test pod is ${TEST_POD}"
+PROD_BLUE_POD=$(oc get pod -n dol-prod |grep '^dol' |grep 'Running'| grep blue | cut -f1 -d" ")
+echo "Prod Blue pod is ${PROD_BLUE_POD}"
+PROD_GREEN_POD=$(oc get pod -n dol-prod |grep '^dol' |grep 'Running'| grep green | cut -f1 -d" ")
+echo "Prod Green pod is ${PROD_GREEN_POD}"
 
 echo "issuing copy via bash script on each pod"
 
