@@ -15,7 +15,8 @@ pipeline {
       def prodProject  = "${DEMONAME}-prod"
       def version = "1"
       def devTag  = "${version}-${currentBuild.number}"
-      def prodTag = "${version}"
+      //def prodTag = "${version}"
+      def prodTag = "2"
       def destApp   = "${DEMONAME}-green"
       def activeApp = ""
   }
@@ -56,15 +57,22 @@ pipeline {
 
         steps {
           // Build Image, tag Image
-          echo "Building OpenShift container image ${DEMONAME}:${devTag}"
+          echo "Deploying OpenShift container image ${DEMONAME}:${devTag} in Test"
 
-          // Start PHP Build in OpenShift
+          // Deploy Drupal Image in OpenShift (Test)
           script {
             openshift.withCluster() {
               openshift.withProject("${testProject}") {
 
-                openshift.selector("bc", "${DEMONAME}").startBuild("--wait=true")
-                openshift.tag("${DEMONAME}:latest", "${DEMONAME}:${devTag}")
+                // Update the Image on the Test Deployment Config
+                def dc = openshift.selector("dc/${testApp}").object()
+
+                dc.spec.template.spec.containers[0].image="docker-registry.default.svc:5000/${devProject}/${DEMONAME}:${devTag}"
+
+                openshift.apply(dc)
+
+                // Deploy the test application.
+                openshift.selector("dc", "${testApp}").rollout().latest();
               }
             }
           }
@@ -90,17 +98,24 @@ pipeline {
                 echo "Active Application:      " + activeApp
                 echo "Destination Application: " + destApp
 
-                openshift.selector("bc", "${destApp}").startBuild("--wait=true")
-
-                // Update the Image on the Production Deployment Config
+                // Update the Image on the Test Deployment Config
                 def dc = openshift.selector("dc/${destApp}").object()
-              
+
+                dc.spec.template.spec.containers[0].image="docker-registry.default.svc:5000/${devProject}/${DEMONAME}:${devTag}"
+
+                openshift.apply(dc)
+
+                // Deploy the test application.
+                openshift.selector("dc", "${destApp}").rollout().latest();
+
                 // Wait for application to be deployed
                 def dc_prod = openshift.selector("dc", "${destApp}").object()
 
                 def dc_version = dc_prod.status.latestVersion
 
                 def rc_prod = openshift.selector("rc", "${destApp}-${dc_version}").object()
+              
+                openshift.tag("${DEMONAME}:latest", "${DEMONAME}:${prodTag}")
 
                 echo "Waiting for ${destApp} to be ready"
                 while (rc_prod.spec.replicas != rc_prod.status.readyReplicas) {
@@ -116,6 +131,8 @@ pipeline {
       stage('Switch over to new Version') {
 
         steps {
+          input "Switch Production?"
+
           echo "Switching Production application to ${destApp}."
           script {
             openshift.withCluster() {

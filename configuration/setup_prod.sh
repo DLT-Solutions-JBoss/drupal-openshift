@@ -12,7 +12,6 @@ echo "Setting up Tasks Production Environment in project ${DEMONAME}-prod"
 # Set up Production Project
 oc policy add-role-to-group system:image-puller system:serviceaccounts:${DEMONAME}-prod -n ${DEMONAME}-test
 oc policy add-role-to-user edit system:serviceaccount:${DEMONAME}-jenkins:jenkins -n ${DEMONAME}-prod
-# oc create secret docker-registry nexus-registry-secret -n ${DEMONAME}-prod --docker-email="rick.stewart@dlt.com" --docker-server="nexus-registry-gpte-hw-cicd.apps.na311.openshift.opentlc.com" --docker-username=admin --docker-password=redhat
 
 # Create Blue Application
 oc project ${DEMONAME}-prod
@@ -24,17 +23,10 @@ oc process drupal8-app-demo -n openshift \
     -p MYSQL_DATABASE=${DEMONAME} \
     -p MYSQL_ROOT_PASSWORD=${DEMONAME} \
     | oc create -f -
-#oc set triggers dc/${DEMONAME}-blue --remove-all -n ${DEMONAME}-prod
-#oc expose dc ${DEMONAME}-blue -n ${DEMONAME}-prod
-#oc create configmap ${DEMONAME}-blue-config --from-literal="application-users.properties=Placeholder" --from-literal="application-roles.properties=Placeholder" -n ${DEMONAME}-prod
-#oc set volume dc/${DEMONAME}-blue --add --name=jboss-config --mount-path=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties --configmap-name='${DEMONAME}'-blue-config -n ${DEMONAME}-prod
-#oc set volume dc/${DEMONAME}-blue --add --name=jboss-config1 --mount-path=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties --configmap-name='${DEMONAME}'-blue-config -n ${DEMONAME}-prod
-#oc set probe dc/${DEMONAME}-blue --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
-#oc set probe dc/${DEMONAME}-blue --liveness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
+
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
 oc set env dc/${DEMONAME}-blue VERSION="0.0 (${DEMONAME}-blue)" -n ${DEMONAME}-prod
 #oc patch dc ${DEMONAME}-blue -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
-
 
 # Create Green Application
 oc project ${DEMONAME}-prod
@@ -46,16 +38,47 @@ oc process drupal8-app-demo -n openshift \
     -p MYSQL_DATABASE=${DEMONAME} \
     -p MYSQL_ROOT_PASSWORD=${DEMONAME} \
     | oc create -f -
-#oc set triggers dc/${DEMONAME}-green --remove-all -n ${DEMONAME}-prod
-#oc expose dc ${DEMONAME}-green -n ${DEMONAME}-prod
-#oc create configmap ${DEMONAME}-green-config --from-literal="application-users.properties=Placeholder" --from-literal="application-roles.properties=Placeholder" -n ${DEMONAME}-prod
-#oc set volume dc/${DEMONAME}-green --add --name=jboss-config --mount-path=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties --configmap-name='${DEMONAME}'-green-config -n ${DEMONAME}-prod
-#oc set volume dc/${DEMONAME}-green --add --name=jboss-config1 --mount-path=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties --configmap-name='${DEMONAME}'-green-config -n ${DEMONAME}-prod
-#oc set probe dc/${DEMONAME}-green --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
-#oc set probe dc/${DEMONAME}-green --liveness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-prod
+
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
 oc set env dc/${DEMONAME}-green VERSION="0.0 (${DEMONAME}-green)" -n ${DEMONAME}-prod
 #oc patch dc ${DEMONAME}-green -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
 
 # Expose Blue service as route to make green application active
 oc expose svc/${DEMONAME}-green --name ${DEMONAME} -n ${DEMONAME}-prod
+
+# Make sure that blue app is fully up and running before proceeding!
+echo "Making sure that blue app is fully up and running before proceeding!"
+while : ; do
+  echo "Checking if ${DEMONAME}-blue is Ready..."
+  AVAILABLE_REPLICAS=$(oc get dc ${DEMONAME}-blue -n ${DEMONAME}-prod -o=jsonpath='{.status.availableReplicas}')
+  if [[ "$AVAILABLE_REPLICAS" == "1" ]]; then
+    echo "...Yes. ${DEMONAME}-blue is ready."
+    break
+  fi
+  echo "...no. Sleeping 10 seconds."
+  sleep 10
+done
+
+PROD_BLUE_POD=$(oc get pod -n dol-prod |grep '^dol' |grep 'Running'| grep blue | cut -f1 -d" ")
+echo "Prod Blue pod is ${PROD_BLUE_POD}"
+echo "issuing copy via bash script on each pod"
+oc exec ${PROD_BLUE_POD} -c ${DEMONAME}-blue -n ${DEMONAME}-prod bash init_settings.sh
+
+# Make sure that green app is fully up and running before proceeding!
+echo "Making sure that green app is fully up and running before proceeding!"
+while : ; do
+  echo "Checking if ${DEMONAME}-green is Ready..."
+  AVAILABLE_REPLICAS=$(oc get dc ${DEMONAME}-green -n ${DEMONAME}-prod -o=jsonpath='{.status.availableReplicas}')
+  if [[ "$AVAILABLE_REPLICAS" == "1" ]]; then
+    echo "...Yes. ${DEMONAME}-green is ready."
+    break
+  fi
+  echo "...no. Sleeping 10 seconds."
+  sleep 10
+done
+
+PROD_GREEN_POD=$(oc get pod -n dol-prod |grep '^dol' |grep 'Running'| grep green | cut -f1 -d" ")
+echo "Prod Green pod is ${PROD_GREEN_POD}"
+echo "issuing copy via bash script on each pod"
+oc exec ${PROD_GREEN_POD} -c ${DEMONAME}-green -n ${DEMONAME}-prod bash init_settings.sh
+

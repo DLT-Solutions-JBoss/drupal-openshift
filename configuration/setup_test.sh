@@ -13,8 +13,6 @@ echo "Setting up Tasks Test Environment in project ${DEMONAME}-test"
 oc policy add-role-to-user edit system:serviceaccount:${DEMONAME}-jenkins:jenkins -n ${DEMONAME}-test
 
 # Set up Test Application
-# oc new-build --binary=true --name="${DEMONAME}" jboss-eap71-openshift:1.3 -n ${DEMONAME}-test
-# oc new-build --binary=true --name="${DEMONAME}" --image-stream=openshift/jboss-eap71-openshift:1.1 -n ${DEMONAME}-test
 oc project ${DEMONAME}-test
 oc process drupal8-app-demo -n openshift \
     -p APPLICATION_NAME=${DEMONAME} \
@@ -24,15 +22,28 @@ oc process drupal8-app-demo -n openshift \
     -p MYSQL_DATABASE=${DEMONAME} \
     -p MYSQL_ROOT_PASSWORD=${DEMONAME} \
     | oc create -f -
-# oc new-app ${DEMONAME}-test/${DEMONAME}:0.0-0 --name=tasks --allow-missing-imagestream-tags=true -n ${DEMONAME}-test
-# oc set triggers dc/tasks --remove-all -n ${DEMONAME}-test
-# oc expose dc ${DEMONAME} --port 8080 -n ${DEMONAME}-test
-# oc expose svc ${DEMONAME} -n ${DEMONAME}-test
-#oc create configmap tasks-config --from-literal="application-users.properties=Placeholder" --from-literal="application-roles.properties=Placeholder" -n ${DEMONAME}-test
-#oc set volume dc/${DEMONAME} --add --name=jboss-config --mount-path=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties --configmap-name=tasks-config -n ${DEMONAME}-test
-# oc set volume dc/${DEMONAME} --add --name=jboss-config1 --mount-path=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties --configmap-name=tasks-config -n ${DEMONAME}-test
-# oc set probe dc/${DEMONAME} --readiness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-test
-# oc set probe dc/${DEMONAME} --liveness --get-url=http://:8080/ --initial-delay-seconds=30 --timeout-seconds=1 -n ${DEMONAME}-test
 
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
 oc set env dc/${DEMONAME} VERSION='0.0 (${DEMONAME}-test)' -n ${DEMONAME}-test
+
+# Make sure that app is fully up and running before proceeding!
+while : ; do
+  echo "Checking if ${DEMONAME} is Ready..."
+  AVAILABLE_REPLICAS=$(oc get dc ${DEMONAME} -n ${DEMONAME}-test -o=jsonpath='{.status.availableReplicas}')
+  if [[ "$AVAILABLE_REPLICAS" == "1" ]]; then
+    echo "...Yes. ${DEMONAME} is ready."
+    break
+  fi
+  echo "...no. Sleeping 10 seconds."
+  sleep 10
+done
+
+# initialize settings and latest content/configuration
+
+TEST_POD=$(oc get pod -n dol-test |grep '^dol' |grep 'Running'| cut -f1 -d" ")
+echo "Test pod is ${TEST_POD}"
+
+echo "issuing init via bash script on new pod"
+
+oc exec ${TEST_POD} -c ${DEMONAME} -n ${DEMONAME}-test bash init_settings.sh
+
