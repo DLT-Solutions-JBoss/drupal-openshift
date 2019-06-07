@@ -115,7 +115,7 @@ pipeline {
 
                 def rc_prod = openshift.selector("rc", "${destApp}-${dc_version}").object()
               
-                openshift.tag("${DEMONAME}:latest", "${DEMONAME}:${prodTag}")
+                openshift.tag("${destApp}:latest", "${destApp}:${prodTag}")
 
                 echo "Waiting for ${destApp} to be ready"
                 while (rc_prod.spec.replicas != rc_prod.status.readyReplicas) {

@@ -47,3 +47,5 @@ echo "issuing init via bash script on new pod"
 
 oc exec ${TEST_POD} -c ${DEMONAME} -n ${DEMONAME}-test bash init_settings.sh
 
+# Remove triggers to ensure loops or race conditions don't occur
+oc set triggers dc/${DEMONAME} --remove-all -n ${DEMONAME}-test

@@ -26,7 +26,6 @@ oc process drupal8-app-demo -n openshift \
 
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
 oc set env dc/${DEMONAME}-blue VERSION="0.0 (${DEMONAME}-blue)" -n ${DEMONAME}-prod
-#oc patch dc ${DEMONAME}-blue -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
 
 # Create Green Application
 oc project ${DEMONAME}-prod
@@ -41,7 +40,6 @@ oc process drupal8-app-demo -n openshift \
 
 # Setting 'wrong' VERSION. This will need to be updated in the pipeline
 oc set env dc/${DEMONAME}-green VERSION="0.0 (${DEMONAME}-green)" -n ${DEMONAME}-prod
-#oc patch dc ${DEMONAME}-green -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"nexus-registry-secret"}]}}}}'
 
 # Expose Blue service as route to make green application active
 oc expose svc/${DEMONAME}-green --name ${DEMONAME} -n ${DEMONAME}-prod
@@ -82,3 +80,6 @@ echo "Prod Green pod is ${PROD_GREEN_POD}"
 echo "issuing copy via bash script on each pod"
 oc exec ${PROD_GREEN_POD} -c ${DEMONAME}-green -n ${DEMONAME}-prod bash init_settings.sh
 
+# Turning off triggers to ensure no race conditions occur
+oc set triggers dc/${DEMONAME}-blue --remove-all -n ${DEMONAME}-prod
+oc set triggers dc/${DEMONAME}-green --remove-all -n ${DEMONAME}-prod
