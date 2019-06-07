@@ -6,24 +6,8 @@ This repository contains a curated set of php files, configuration, and template
 - [Overview](#overview)
     - [Official](#official)
     - [Community](#community)
-- [Building the OpenShift Drupal Lifecycle Projects](#building-the-library)
-    - [Clone this repo to a Linux env](#python-dependencies)
-    - [Login to your OCP environment as administrator](#running-the-script)
-    - [Variables used in setup scripts](#verifying-your-updates)
-    - [Setup Lifecycle Projects](#verifying-your-updates)
-    - [Setup Jenkins Project](#verifying-your-updates)
-    - [Installing the Drupal App Template](#verifying-your-updates)
-    - [Verifying Your Additions](#verifying-your-updates)
-- [Contributing](#contributing)
-    - [YAML File Structure](#yaml-file-structure)
-        - [Variables](#variables)
-        - [Organization](#organization)
-        - [folder_name](#folder_name)
-        - [location](#location)
-        - [docs](#docs)
-        - [regex](#regex)
-        - [suffix](#suffix)
-    - [Adding Your Template or ImageStream](#adding-your-template-or-imagestream)
+- [Building the OpenShift Drupal Lifecycle Projects](#building-the-openshift-drupal-lifecycle-projects)
+- [Lifecycle Processing](#lifecycle-processing)
 - [Additional Information](#additional-information)
 
 
@@ -88,76 +72,23 @@ Example:
 
     $ ./configuration/verify_prerequisistes.sh DEMONAME USER
     
-The `make verify` command runs the following checks:
- - verifies YAML syntax
- - verifies the Python script *(using pylint)* 
- - verifies that make import has been run
-
-## Contributing
+## Lifescycle Processing
 
 ### Adding the Development Template
 
-- Fork the [openshift/library](https://github.com/openshift/library) repository on github
-- Add your template or image stream to the **community.yaml** or **official.yaml** file in the top level of this project
-- Run the `make import` command and make sure that your template(s) and/or image-stream(s) are processed and written to the correct directory under the **community** or **official** folder and that no errors have occurred.
-- Run the `make verify` command and ensure that no errors occur
-- Commit and push your changes to your fork of the github repository
-  - Make sure to commit any changes in the **community** and **official** folders
-- Create a pull request against the [openshift/library](https://github.com/openshift/library) upstream repository
-
-That's it!  Your pull request will be reviewed by a member of the OpenShift Team and merged if everything looks good.
-
-
-### YAML file structure:
-
-    variables: # (optional) top level block item
-      <variable_name>: <value> # (optional)
-    data: # (required) top level block item
-      DEMONAME<folder_name>: # (required) folder that the below items will be stored in
-        imagestreams: # (optional) list of image-streams to process into the above folder
-          - location: # (required) github url to a json file or folder of json files
-            regex: # (optional) matched against ['metadata']['name'] in the json file
-            suffix: # (optional) suffix for the file that is created ex: ruby-<suffix>.json
-            docs: # (optional) web address of the documentation for this image-stream
-        templates: # (optional) list of templates to process into the above folder
-          - location: # (required) github url to a template or folder of templates in json format
-            regex: # (optional) matched against ['metadata']['name'] in the json file
-            suffix: # (optional) suffix for the file that is created ex: ruby-<suffix>.json
-            docs: # (optional) web address of the documentation for this template
-
-#### Variables
-
-Anything under the **data** block can contain a reference to a variable by using the following syntax:
-
-    {variable_name}
-
-You must also specify a value for that variable name under the **variables** block with the following syntax:
-
-    <variable_name>: <value>
+- Clone this [repository](https://github.com/DLT-Solutions-JBoss/drupal-openshift) from github
+- Create a new project for your development
+- Install theme or module using git submodules in order to produce a federated look and feel
+  - [Git Submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+- Create a new application instance from the Catalog
+- Install Drupal app
+- Install Config Suite, Backup and Migrate, and (optionally) Server IP modules
+- Configure Config Suite to import and export automatically
+- Restore the database with the latest backup from your repo.
 
 #### Organization
 
-Listings in the **official.yaml** file will be created in a sub folder of the  **official** top level folder.  Listings in the **community.yaml** file will be created in a sub folder of the **community** top level folder.
-
-#### folder_name
-
-The **folder_name** is a sub folder which represents a logical grouping for a set of templates or image-streams in the top level **official** or **community** folders.
-
-#### location
-
-The **location** must be a publicly available url that points to either a template, image-stream, or image-stream list file in JSON or YAML format
-
-#### docs
-
-The **docs** is a field to list the web address of the documentation for the template, image-stream, or image-stream list
-
-#### regex
-
-The **regex** is a plain string that is matched against the `['metadata']['name']` element in the template or image-stream.  Make sure that the **regex** string that you provide is descriptive enough to only match the `['metadata']['name']` that you are trying to target.
-
-#### suffix
-
-The **suffix** is applied to the end of the filename that is created right before the .json file extension and can contain dashes (-) or underscores (_).
+TBD
 
 ### Cleaning up your projects
 
@@ -165,7 +96,7 @@ The **suffix** is applied to the end of the filename that is created right befor
 
 ## Additional information
 
-### Creating templates, image-streams, and image-stream lists
+### OpenShift - Creating OpenShift templates, using Quickstarts, image-streams, and image management
 
 You can find more information about creating templates and image-streams in the official [OpenShift Documentation](https://docs.okd.io/latest).  Below are some quick links to important sections:
 
@@ -174,3 +105,15 @@ You can find more information about creating templates and image-streams in the 
 - [Quickstart Templates](https://docs.okd.io/latest/dev_guide/dev_tutorials/quickstarts.html)
 - [Image Streams](https://docs.okd.io/latest/architecture/core_concepts/builds_and_image_streams.html#image-streams)
 - [Managing Images](https://docs.okd.io/latest/dev_guide/managing_images.html#dev-guide-managing-images)
+
+### Drupal - Creating Drupal Apps, Federated Themes & Modules, Composer, etc. 
+
+You can find more information about Drupal in the official [Drupal 8 Documentation](https://www.drupal.org/8).  Below are some quick links to important sections:
+
+- [Local Development Guide](https://www.drupal.org/docs/official_docs/en/_local_development_guide.html)
+- [Installing Drupal 8 Modules](https://www.drupal.org/docs/8/extending-drupal-8/installing-drupal-8-modules)
+- [Installing Drupal 8 Themes](https://www.drupal.org/docs/8/extending-drupal-8/installing-themes)
+- [Installing Config Suite](https://www.drupal.org/project/config_suite)
+- [Installing Backup and Migrate](https://www.drupal.org/docs/7/modules/backup-and-migrate/backup-and-migrate)
+- [Installing Server IP](https://www.drupal.org/project/server_ip)
+
