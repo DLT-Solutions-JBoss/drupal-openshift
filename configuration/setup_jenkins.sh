@@ -41,7 +41,7 @@ items:
       type: "Git"
       git:
         uri: "$REPO"
-      contextDir: /
+      contextDir: ""
     strategy:
       type: "JenkinsPipeline"
       jenkinsPipelineStrategy:

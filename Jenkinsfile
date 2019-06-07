@@ -65,7 +65,7 @@ pipeline {
               openshift.withProject("${testProject}") {
 
                 // Update the Image on the Test Deployment Config
-                def dc = openshift.selector("dc/${testApp}").object()
+                def dc = openshift.selector("dc/${DEMONAME}").object()
 
                 dc.spec.template.spec.containers[0].image="docker-registry.default.svc:5000/${devProject}/${DEMONAME}:${devTag}"
 
