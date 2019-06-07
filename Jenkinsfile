@@ -72,7 +72,7 @@ pipeline {
                 openshift.apply(dc)
 
                 // Deploy the test application.
-                openshift.selector("dc", "${testApp}").rollout().latest();
+                openshift.selector("dc", "${DEMONAME}").rollout().latest();
               }
             }
           }
