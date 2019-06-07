@@ -21,6 +21,7 @@ oc policy add-role-to-user admin ${USER} -n ${DEMONAME}-test
 oc policy add-role-to-user admin ${USER} -n ${DEMONAME}-prod
 
 oc policy add-role-to-user system:image-puller system:serviceaccount:${DEMONAME}-test:default -n ${DEMONAME}-dev
+oc policy add-role-to-user system:image-puller system:serviceaccount:${DEMONAME}-prod:default -n ${DEMONAME}-dev
 oc policy add-role-to-user system:image-puller system:serviceaccount:${DEMONAME}-prod:default -n ${DEMONAME}-test
 
 oc annotate namespace ${DEMONAME}-jenkins    openshift.io/requester=${USER} --overwrite
