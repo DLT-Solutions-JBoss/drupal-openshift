@@ -1,7 +1,7 @@
 pipeline {
   agent {
     // Using the Jenkins Agent Pod that we defined earlier
-    label "jenkins-agent-appdev"
+    label "maven"
   }
 
   environment {
